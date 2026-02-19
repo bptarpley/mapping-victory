@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapping Victory</title>
+    <link rel="stylesheet" href="https://use.typekit.net/jjk5ixf.css">
+    <link type="text/css" rel="stylesheet" href="css/mapping_victory.css">
+</head>
+<body>
+    <!-- SVG Graphics -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        <symbol id="icon-close" viewBox="0 0 16 16">
+            <line x1="4" y1="4" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <line x1="12" y1="4" x2="4" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </symbol>
+    </svg>
+
+    <header>
+        <h1>Mapping Victory</h1>
+        <h2>U.S. Army Souvenir Maps from the European Theater of Operations, 1944-46</h2>
+    </header>
+    <main class="filter-and-gallery-container">
+        <div id="filter-div">
+            <input type="text" id="gallery-search-box" placeholder="Search">
+            <div id="filter-indicator-div"></div>
+        </div>
+        <div id="gallery-div"></div>
+    </main>
+    <footer>
+
+    </footer>
+
+    <script src="js/utilities.js"></script>
+    <script src="js/vis-data.js"></script>
+    <script src="js/corpus.js"></script>
+    <script src="js/faceter.js"></script>
+    <script src="js/gallery.js"></script>
+    <script language="javascript">
+        window.mv = {
+            corporaHost: 'https://corpora.library.tamu.edu',
+            corpusID: '66d0cf276083e79367c617c6',
+            faceter: null,
+            showDefaultGalleries: null,
+            galleryIDs: new Set()
+        }
+        window.mv['api'] = `${mv.corporaHost}/api/corpus/${mv.corpusID}`
+
+        // MAIN ENTRY POINT
+        document.addEventListener('DOMContentLoaded', function() {
+            mv.corpus = new Corpus()
+            mv.corpus.build(() => {
+                let filterDiv = getEl('filter-div')
+                mv.faceter = new Faceter(filterDiv)
+
+                // TAGS
+                callAPI(`${mv.api}/Feature/`, {'page-size': 0, 'a_terms_tags': 'tags.id'}, (tagInfo) => {
+                    mv.faceter.buildFacetList('Tag', 'Tags', tagInfo.meta.aggregations.tags)
+
+                    // EVENTS
+                    callAPI(`${mv.api}/Feature/`, {'page-size': 0, 'a_terms_events': 'events.id'}, (eventInfo) => {
+                        mv.faceter.buildFacetList('Event', 'Events', eventInfo.meta.aggregations.events)
+
+                        // PLACES
+                        callAPI(`${mv.api}/Feature/`, {'page-size': 0, 'a_terms_locations': 'locations.id'}, (locInfo) => {
+                            let locationCounts = locInfo.meta.aggregations.locations
+                            let regionCounts = {}
+
+                            Object.keys(locationCounts).forEach(locID => {
+                                let regions = mv.corpus.getAssociatedContents('Place', locID, 'Region')
+                                regions.forEach(region => {
+                                    if (!(region.id in regionCounts)) regionCounts[region.id] = 0
+                                    regionCounts[region.id] += locationCounts[locID]
+                                })
+                            })
+                            mv.faceter.buildFacetList('Region', 'Places', regionCounts)
+                        })
+                    })
+                })
+
+
+                // FEATURE GALLERIES
+                mv.showDefaultGalleries = () => {
+                    let galleryDiv = getEl('gallery-div')
+                    clearEl(galleryDiv)
+                    let g = new Gallery(galleryDiv, 'Feature', 'Featured', true, {f_featured: true})
+                }
+
+                mv.showDefaultGalleries()
+            })
+        })
+
+    </script>
+</body>
+</html>
