@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>Mapping Victory</title>
     <link rel="stylesheet" href="https://use.typekit.net/jjk5ixf.css">
+    <link rel="stylesheet" href="js/leaflet/leaflet.css">
+    <link rel="stylesheet" href="js/markercluster/MarkerCluster.css">
     <link type="text/css" rel="stylesheet" href="css/mapping_victory.css">
 </head>
 <body>
@@ -22,7 +24,7 @@
     <main class="filter-and-gallery-container">
         <div id="filter-div">
             <input type="text" id="gallery-search-box" placeholder="Search">
-            <div id="filter-indicator-div"></div>
+            <div id="filter-indicator-div" class="hidden"></div>
         </div>
         <div id="gallery-div"></div>
     </main>
@@ -30,18 +32,26 @@
 
     </footer>
 
+    <script src="js/openseadragon/openseadragon.min.js"></script>
+    <script src="js/leaflet/leaflet.js"></script>
+    <script src="js/markercluster/leaflet.markercluster.js"></script>
     <script src="js/utilities.js"></script>
     <script src="js/vis-data.js"></script>
     <script src="js/corpus.js"></script>
     <script src="js/faceter.js"></script>
     <script src="js/gallery.js"></script>
+    <script src="js/detailer.js"></script>
+    <script src="js/mapper.js"></script>
     <script language="javascript">
         window.mv = {
             corporaHost: 'https://corpora.library.tamu.edu',
             corpusID: '66d0cf276083e79367c617c6',
             faceter: null,
+            detailer: null,
+            mapper: null,
             showDefaultGalleries: null,
-            galleryIDs: new Set()
+            galleryIDs: new Set(),
+            urlParams: new URLSearchParams(window.location.search)
         }
         window.mv['api'] = `${mv.corporaHost}/api/corpus/${mv.corpusID}`
 
@@ -51,6 +61,15 @@
             mv.corpus.build(() => {
                 let filterDiv = getEl('filter-div')
                 mv.faceter = new Faceter(filterDiv)
+                mv.detailer = new Detailer()
+                mv.mapper = new Mapper()
+
+                // FEATURE GALLERIES
+                mv.showDefaultGalleries = () => {
+                    let galleryDiv = getEl('gallery-div')
+                    clearEl(galleryDiv)
+                    let g = new Gallery(galleryDiv, 'Feature', 'Featured', true, {f_featured: true})
+                }
 
                 // TAGS
                 callAPI(`${mv.api}/Feature/`, {'page-size': 0, 'a_terms_tags': 'tags.id'}, (tagInfo) => {
@@ -73,19 +92,24 @@
                                 })
                             })
                             mv.faceter.buildFacetList('Region', 'Places', regionCounts)
+
+                            // now that all facets are built, let's check to see if any GET params
+                            // were passed in, indicating that we want to filter our gallery immediately
+                            // on load
+                            let filteredOnLoad = false
+                            let filtersAvailableOnLoad = ['Tag', 'Event', 'Place']
+                            filtersAvailableOnLoad.forEach(filterAvailableOnLoad => {
+                                if (mv.urlParams.has(filterAvailableOnLoad)) {
+                                    mv.faceter.applyFacet(filterAvailableOnLoad, mv.urlParams.get(filterAvailableOnLoad))
+                                    filteredOnLoad = true
+                                }
+                            })
+
+                            // if we aren't filtering on load, go ahead and display default galleries
+                            if (!filteredOnLoad) mv.showDefaultGalleries()
                         })
                     })
                 })
-
-
-                // FEATURE GALLERIES
-                mv.showDefaultGalleries = () => {
-                    let galleryDiv = getEl('gallery-div')
-                    clearEl(galleryDiv)
-                    let g = new Gallery(galleryDiv, 'Feature', 'Featured', true, {f_featured: true})
-                }
-
-                mv.showDefaultGalleries()
             })
         })
 

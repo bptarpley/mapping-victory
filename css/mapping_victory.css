@@ -58,7 +58,7 @@ h1 {
     border-radius: 25px;
     padding: 6px 15px;
     font-family: "new-order", sans-serif;
-    font-weight: 500;
+    font-weight: 400;
     font-style: normal;
     font-size: 20px;
     outline: none;
@@ -67,13 +67,17 @@ h1 {
 }
 #gallery-search-box::placeholder { color: #242119; }
 
+#filter-indicator-div {
+    margin-top: -20px;
+    margin-bottom: 30px;
+}
 .filter-indicator {
     color: #ecede4;
     border-radius: 20px;
     padding: 5px 12px;
     font-size: 16px;
     font-family: "new-order", sans-serif;
-    font-weight: 500;
+    font-weight: 400;
     font-style: normal;
     align-items: center;
     gap: 4px;
@@ -84,7 +88,7 @@ h1 {
 .filter-indicator.red { background: #eb5534; }
 .filter-indicator.blue { background: #4d82a1; }
 
-.filter-delete-button {
+.filter-delete-button, #feature-detail-close-button {
     background: none;
     border: none;
     padding: 0;
@@ -125,7 +129,7 @@ h1 {
     color: #242119;
     text-decoration: none;
     font-family: "new-order", sans-serif;
-    font-weight: 500;
+    font-weight: 400;
     font-style: normal;
     display: block;
     margin-bottom: 10px;
@@ -197,4 +201,76 @@ h1 {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform 0.2s ease, filter 0.2s ease;
+    cursor: pointer;
 }
+.gallery-pane img:hover {
+    transform: scale(1.05);
+    filter: brightness(1.1);
+}
+
+#feature-detail-modal {
+    position: sticky;
+    color: #ecede4;
+    background-color: rgba(36, 33, 25, 0.9);
+    height: 50vh;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    z-index: 50;
+}
+
+#feature-detail-controls {
+    height: 30px;
+    display: flex;
+    flex-direction: row;
+    justify-content: end;
+}
+#feature-detail-close-button { padding: 5px; }
+#feature-detail-content {
+    display: flex;
+    flex-direction: row;
+    height: calc(50vh - 50px);
+    padding: 0 20px 20px 20px;
+}
+#feature-detail-meta-pane {
+    display: flex;
+    flex-direction: column;
+    font-family: "new-order", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+    max-height: 100%;
+    overflow-y: scroll;
+    width: 35%;
+    height: 100%;
+}
+
+#feature-detail-dragon-pane {
+    width: 65%;
+    height: 100%;
+    padding-left: 20px;
+}
+
+.feature-detail-title {
+    font-size: 22px;
+    margin-bottom: 20px;
+}
+
+.feature-detail-metadatum {
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 20px;
+}
+.feature-detail-metadatum-field {
+    display: flex;
+    align-items: start;
+    width: 30%;
+}
+.feature-detail-metadatum-value {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    width: 70%;
+}
+.feature-detail-metadatum-value a { color: #ecede4; }
+.feature-detail-metadatum-value p { margin: 0 0 10px 0; }

@@ -3,7 +3,7 @@ class Gallery {
         this.mv = window.mv
         this.parent = parent
         this.contentType = contentType
-        this.defaultFilters = {'page': 1, 'page-size': 10000}
+        this.defaultFilters = {'page': 1, 'page-size': 10000, 'only': 'id,image_url,title,tags.id,events.id,locations.id'}
         this.defaultFilters[`s_${this.mv.corpus.meta[contentType].sortField}`] = 'asc'
         this.filters = Object.assign(this.defaultFilters, filters)
         this.label = label
@@ -29,10 +29,11 @@ class Gallery {
         this.element = getEl(`gallery-${this.galleryID}`)
         this.galleryContentDiv = getEl(`gallery-${this.galleryID}-content`)
 
-        this.paneObserver = new IntersectionObserver(function(entries) {
+        this.paneObserver = new IntersectionObserver((entries) => {
             entries.forEach((entry, index) => {
                 if (entry.isIntersecting) {
                     let pane = entry.target
+
                     if (!pane.hasAttribute('data-loaded')) {
                         const rect = pane.getBoundingClientRect()
                         let divWidth = parseInt(rect.width)
@@ -52,7 +53,7 @@ class Gallery {
                         imgSrc += `${imgSizeSpec}/0/default.jpg`
 
                         pane.innerHTML = `
-                            <img src="${imgSrc}" alt="${pane.dataset.title}"></img>
+                            <img src="${imgSrc}" alt="${escapeAttrVal(pane.dataset.title)}"></img>
                         `
 
                         pane.setAttribute('data-loaded', 'y')
@@ -62,13 +63,13 @@ class Gallery {
         })
 
         this.imageTemplate = (p) => `
-            <div class="gallery-pane" data-id="${p.id}"
+            <div id="gallery-pane-${p.id}" class="gallery-pane" data-id="${p.id}"
                 data-uri="${p.uri}"
                 data-x="${p.x}"
                 data-y="${p.y}"
                 data-width="${p.width}"
                 data-height="${p.height}"
-                data-title="${p.title}">
+                data-title="${escapeAttrVal(p.title)}">
             </div>
         `
 
@@ -91,6 +92,13 @@ class Gallery {
 
                 setTimeout(() => forElsMatching('.gallery-pane', (pane) => this.paneObserver.observe(pane)), 1000)
                 if (callback !== null) callback()
+            }
+        })
+
+        document.addEventListener('click', (e) => {
+            let pane = e.target.closest('.gallery-pane')
+            if (pane) {
+                this.mv.detailer.showFeatureDetails(pane)
             }
         })
     }
