@@ -46,7 +46,7 @@ class Corpus {
                 xRefs: [
                     {field: 'tags', reference: 'Tag', via: null, multi: true},
                     {field: 'events', reference: 'Event', via: null, multi: true},
-                    {field: 'locations', reference: 'Place', multi: true},
+                    {field: 'locations', reference: 'Place', via: null, multi: true},
                     {field: 'locations', reference: 'Region', via: 'Place', multi: true},
                     {field: 'referenced_people', reference: 'Person', via: null, multi: true},
                 ],
@@ -197,5 +197,20 @@ class Corpus {
                 }
             })
         }
+    }
+
+    showConnectionStats() {
+        let conns = {}
+
+        Object.keys(this.connections).forEach(key => {
+            const match = key.match(/([^-]*)-[^-]*--([^-]*)-[^-]*/)
+            if (match) {
+                let con = `${match[1]}-${match[2]}`
+                if (!(con in conns)) conns[con] = 0
+                conns[con] += 1
+            }
+        })
+
+        return conns
     }
 }

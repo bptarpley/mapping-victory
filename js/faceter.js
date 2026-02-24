@@ -9,17 +9,20 @@ class Faceter {
             Tag: {
                 getParam: 'f_tags.id',
                 values: [],
+                availableValues: new Set(),
                 label: 'Tag'
             },
             Event: {
                 getParam: 'f_events.id',
                 values: [],
+                availableValues: new Set(),
                 label: 'Event'
             },
             Place: {
                 getParam: 'f_locations.id',
                 values: [],
-                label: 'Place'
+                availableValues: new Set(),
+                label: 'Place',
             }
         }
 
@@ -34,6 +37,8 @@ class Faceter {
                 else this.search = null
             }, 1500)
         })
+        this.searchBox.addEventListener('focusin', (e) => this.searchBox.setAttribute('placeholder', ''))
+        this.searchBox.addEventListener('focusout', (e) => this.searchBox.setAttribute('placeholder', 'Search'))
 
         document.addEventListener('click', (e) => {
             let link = e.target
@@ -42,24 +47,16 @@ class Faceter {
                 let value = link.dataset.facetId
 
                 if (facet === 'Region') {
-                    console.log('Show map')
+                    this.mv.mapper.pickLocation(value)
                 } else {
-                    this.filterTracker[facet].values.push(value)
-                    this.filterGallery()
+                    this.applyFacet(facet, value)
                 }
             } else if (link.closest('.filter-delete-button')) {
                 let button = link.closest('.filter-delete-button')
                 let facet = button.dataset.facet
                 let value = button.dataset.id
 
-                if (facet === 'Search') this.search = null
-                else this.filterTracker[facet].values = this.filterTracker[facet].values.filter(val => val !== value)
-
-                if (Object.keys(this.buildFilters(false)).length) this.filterGallery()
-                else {
-                    this.resetFacetList()
-                    this.mv.showDefaultGalleries()
-                }
+                this.removeFacet(facet, value)
             }
         })
     }
@@ -107,7 +104,7 @@ class Faceter {
         clearEl(getEl('filter-indicator-div'))
 
         Object.keys(this.facetLinks).forEach(facetLinkKey => {
-            this.facetLinks[facetLinkKey].link.classList.remove('hidden')
+            showEl(this.facetLinks[facetLinkKey].link)
             this.facetLinks[facetLinkKey].counter.innerHTML = this.facetLinks[facetLinkKey].totalCount
 
             let ct = this.facetLinks[facetLinkKey].contentType
@@ -118,6 +115,22 @@ class Faceter {
         Object.keys(facetCounter).forEach(facet => {
             getEl(`facet-list-${facet}-counter`).innerHTML = facetCounter[facet]
         })
+    }
+
+    applyFacet(facet, value) {
+        this.filterTracker[facet].values.push(value)
+        this.filterGallery()
+    }
+
+    removeFacet(facet, value) {
+        if (facet === 'Search') this.search = null
+        else this.filterTracker[facet].values = this.filterTracker[facet].values.filter(val => val !== value)
+
+        if (Object.keys(this.buildFilters(false)).length) this.filterGallery()
+        else {
+            this.resetFacetList()
+            this.mv.showDefaultGalleries()
+        }
     }
 
     filterGallery() {
@@ -135,7 +148,7 @@ class Faceter {
             }
 
             Object.keys(this.facetLinks).forEach(facetLinkKey => {
-                this.facetLinks[facetLinkKey].link.classList.add('hidden')
+                hideEl(this.facetLinks[facetLinkKey].link)
                 this.facetLinks[facetLinkKey].count = 0
             })
 
@@ -150,11 +163,13 @@ class Faceter {
                             let facetLinkKey = `${ct}-${id}`
                             if (facetLinkKey in this.facetLinks) {
                                 if (!visibleFacetLinks.has(facetLinkKey)) {
-                                    this.facetLinks[facetLinkKey].link.classList.remove('hidden')
+                                    showEl(this.facetLinks[facetLinkKey].link)
                                     visibleFacetLinks.add(facetLinkKey)
                                     facetCounts[ct] += 1
                                 }
                                 this.facetLinks[facetLinkKey].count += 1
+                            } else if (ct in this.filterTracker) {
+                                this.filterTracker[ct].availableValues.add(id)
                             }
                         }
                     }
@@ -223,6 +238,11 @@ class Faceter {
                 </span>
             `)
             }
+        }
+
+        if (makeIndicators) {
+            if (Object.keys(filters).length) showEl(filterIndicatorDiv)
+            else hideEl(filterIndicatorDiv)
         }
 
         return filters
