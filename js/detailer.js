@@ -33,6 +33,12 @@ class Detailer {
         }
         this.modal = getEl('feature-detail-modal')
 
+        // get main modal areas and clear them
+        let metaPane = getEl('feature-detail-meta-pane')
+        let dragonPane = getEl('feature-detail-dragon-pane')
+        clearEl(metaPane)
+        clearEl(dragonPane)
+
         // size and position modal appropriately
         let topGalleryRect = getElWithQuery('.gallery-content').getBoundingClientRect()
         let modalTop = parseInt(topGalleryRect.top)
@@ -40,21 +46,17 @@ class Detailer {
         this.modal.style.left = `${topGalleryRect.left}px`
         this.modal.style.width = `${topGalleryRect.width}px`
         this.modal.style.marginBottom = '-50vh'
+
+        return [metaPane, dragonPane]
     }
 
     showFeatureDetails(pane) {
-        this.ensureModal()
+        let [metaPane, dragonPane] = this.ensureModal()
 
         // fetch data, display details, and show modal
         callAPI(`${this.mv.api}/Feature/?f_id=${pane.dataset.id}`, {}, featureData => {
             if (featureData.records) {
                 let feature = featureData.records[0]
-
-                // get meta and dragon panes
-                let metaPane = getEl('feature-detail-meta-pane')
-                let dragonPane = getEl('feature-detail-dragon-pane')
-
-                console.log(feature)
 
                 // build tags, events, and places
                 let tags = []
@@ -83,7 +85,6 @@ class Detailer {
                     })
                 }
 
-                clearEl(metaPane)
                 appendToEl(metaPane, `
                     <div class="feature-detail-title">${feature.title}</div>
                     <!-- map -->
@@ -121,7 +122,6 @@ class Detailer {
                     ` : ''}
                 `)
 
-                clearEl(dragonPane)
                 this.dragon = OpenSeadragon({
                     id: 'feature-detail-dragon-pane',
                     prefixUrl: '/js/openseadragon/images/',
@@ -147,6 +147,33 @@ class Detailer {
     }
 
     showRegionMap(regionID) {
+        let region = mv.corpus.getContent('Region', regionID)
+        let [metaPane, dragonPane] = this.ensureModal()
+        let places = mv.corpus.getAssociatedContents('Region', regionID, 'Place')
+        let availablePlaces = mv.faceter.filterTracker['Place'].availableValues
+        let placesToPlot = []
+        let placesList = []
 
+        places.forEach(place => {
+            if (availablePlaces.has(place.id) || availablePlaces.size === 0) {
+                placesToPlot.push(place)
+            }
+        })
+
+        placesToPlot.forEach(place => {
+            placesList.push(`<a href="/?Place=${place.id}">${place.name}</a>`)
+        })
+
+        appendToEl(metaPane, `
+            <div class="feature-detail-title">${region.name}</div>
+            
+            <div class="feature-detail-metadatum">
+                <div class="feature-detail-metadatum-field">Places</div>
+                <div class="feature-detail-metadatum-value">${placesList.join('\n')}</div>
+            </div>
+        `)
+
+        showEl(this.modal)
+        setTimeout(() => mv.mapper.pickLocation(dragonPane, regionID, placesToPlot), 800)
     }
 }
