@@ -86,7 +86,7 @@ class Corpus {
             if (this.meta[facet].is_facet) {
                 let contents = this.getContents(facet)
                 contents.forEach(content => {
-                    this.registerConnections(facet, content)
+                    this.registerConnections(content)
                 })
             }
         })
@@ -143,17 +143,17 @@ class Corpus {
         return connectionKeyParts.join('--')
     }
 
-    registerConnections(contentType, data) {
-        if (contentType in this.meta) {
-            this.meta[contentType].xRefs.forEach(xRef => {
-                if (xRef.field in data) {
+    registerConnections(content) {
+        if (content.contentType in this.meta) {
+            this.meta[content.contentType].xRefs.forEach(xRef => {
+                if (xRef.field in content) {
                     if (xRef.multi) {
-                        data[xRef.field].forEach(val => {
+                        content[xRef.field].forEach(val => {
                             if (val.id) {
                                 if (xRef.via === null) {
                                     let connectionKey = this.buildConnectionKey(
-                                        contentType,
-                                        data.id,
+                                        content.contentType,
+                                        content.id,
                                         xRef.reference,
                                         val.id
                                     )
@@ -162,8 +162,8 @@ class Corpus {
                                     let indirectContents = this.getAssociatedContents(xRef.via, val.id, xRef.reference)
                                     indirectContents.forEach(c => {
                                         let connectionKey = this.buildConnectionKey(
-                                            contentType,
-                                            data.id,
+                                            content.contentType,
+                                            content.id,
                                             xRef.reference,
                                             c.id
                                         )
@@ -172,21 +172,21 @@ class Corpus {
                                 }
                             }
                         })
-                    } else if (data[xRef.field].id) {
+                    } else if (content[xRef.field].id) {
                         if (xRef.via === null) {
                             let connectionKey = this.buildConnectionKey(
-                                contentType,
-                                data.id,
+                                content.contentType,
+                                content.id,
                                 xRef.reference,
-                                data[xRef.field].id
+                                content[xRef.field].id
                             )
                             this.connections[connectionKey] = true
                         } else {
-                            let indirectContents = this.getAssociatedContents(xRef.via, data[xRef.field].id, xRef.reference)
+                            let indirectContents = this.getAssociatedContents(xRef.via, content[xRef.field].id, xRef.reference)
                             indirectContents.forEach(c => {
                                 let connectionKey = this.buildConnectionKey(
-                                    contentType,
-                                    data.id,
+                                    content.contentType,
+                                    content.id,
                                     xRef.reference,
                                     c.id
                                 )

@@ -47,7 +47,7 @@ class Faceter {
                 let value = link.dataset.facetId
 
                 if (facet === 'Region') {
-                    this.mv.mapper.pickLocation(value)
+                    this.mv.detailer.showRegionMap(value)
                 } else {
                     this.applyFacet(facet, value)
                 }
@@ -118,11 +118,17 @@ class Faceter {
     }
 
     applyFacet(facet, value) {
+        // reset any available values
+        for (let facetType in this.filterTracker) this.filterTracker[facetType].availableValues.clear()
+
         this.filterTracker[facet].values.push(value)
         this.filterGallery()
     }
 
     removeFacet(facet, value) {
+        // reset any available values
+        for (let facetType in this.filterTracker) this.filterTracker[facetType].availableValues.clear()
+
         if (facet === 'Search') this.search = null
         else this.filterTracker[facet].values = this.filterTracker[facet].values.filter(val => val !== value)
 

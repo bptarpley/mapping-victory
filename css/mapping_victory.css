@@ -274,3 +274,8 @@ h1 {
 }
 .feature-detail-metadatum-value a { color: #ecede4; }
 .feature-detail-metadatum-value p { margin: 0 0 10px 0; }
+
+.place-marker-label {
+    color: #F39931;
+    font-size: 16px;
+}

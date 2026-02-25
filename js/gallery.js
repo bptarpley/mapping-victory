@@ -86,7 +86,8 @@ class Gallery {
                         appendToEl(this.galleryContentDiv, this.imageTemplate(imgInfo))
 
                         this.mv.galleryIDs.add(image.id)
-                        this.mv.corpus.registerConnections(contentType, image)
+                        image.contentType = this.contentType
+                        this.mv.corpus.registerConnections(image)
                     }
                 })
 
