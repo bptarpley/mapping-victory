@@ -124,7 +124,7 @@ class Detailer {
 
                 this.dragon = OpenSeadragon({
                     id: 'feature-detail-dragon-pane',
-                    prefixUrl: '/js/openseadragon/images/',
+                    prefixUrl: 'js/openseadragon/images/',
                     tileSources: `${pane.dataset.uri}/info.json`
                 })
 
