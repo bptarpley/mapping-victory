@@ -89,7 +89,7 @@ class Mapper {
                         )
 
                         marker.on('click', () => {
-                            window.location.href = `/?Place=${place.id}`
+                            window.location.href = `?Place=${place.id}`
                         })
                         this.markerCluster.addLayer(marker)
                     }
