@@ -100,13 +100,22 @@
                             let filtersAvailableOnLoad = ['Tag', 'Event', 'Place']
                             filtersAvailableOnLoad.forEach(filterAvailableOnLoad => {
                                 if (mv.urlParams.has(filterAvailableOnLoad)) {
-                                    mv.faceter.applyFacet(filterAvailableOnLoad, mv.urlParams.get(filterAvailableOnLoad))
+                                    let filterValues = mv.urlParams.get(filterAvailableOnLoad).split(',')
+                                    filterValues.forEach(val => window.mv.faceter.applyFacet(filterAvailableOnLoad, val, false))
                                     filteredOnLoad = true
                                 }
                             })
 
-                            // if we aren't filtering on load, go ahead and display default galleries
-                            if (!filteredOnLoad) mv.showDefaultGalleries()
+                            if (filteredOnLoad) mv.faceter.filterGallery()
+                            else mv.showDefaultGalleries()
+
+                            // rig up gallery pane click event
+                            document.addEventListener('click', (e) => {
+                                let pane = e.target.closest('.gallery-pane')
+                                if (pane) {
+                                    window.mv.detailer.showFeatureDetails(pane)
+                                }
+                            })
                         })
                     })
                 })

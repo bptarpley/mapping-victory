@@ -65,7 +65,7 @@ class Detailer {
 
                 if (feature.tags?.length) {
                     feature.tags.forEach(tag => {
-                        tags.push(`<a href="?Tag=${tag.id}">${tag.name}</a>`)
+                        tags.push(`<a href="${this.mv.faceter.buildFilterLink('Tag', tag.id)}">${tag.name}</a>`)
                     })
                 }
                 if (feature.locations?.length) {
@@ -75,13 +75,13 @@ class Detailer {
                         associatedRegions.forEach(region => {regions.push(region.name)})
 
                         places.push(`
-                            <a href="?Place=${place.id}">${place.name} ${regions.length ? `(${regions.join(', ')})` : ''}</a>
+                            <a href="${this.mv.faceter.buildFilterLink('Place', place.id)}">${place.name} ${regions.length ? `(${regions.join(', ')})` : ''}</a>
                         `)
                     })
                 }
                 if (feature.events?.length) {
                     feature.events.forEach(event => {
-                        events.push(`<a href="?Event=${event.id}">${event.name}</a>`)
+                        events.push(`<a href="${this.mv.faceter.buildFilterLink('Event', event.id)}">${event.name}</a>`)
                     })
                 }
 
@@ -161,7 +161,7 @@ class Detailer {
         })
 
         placesToPlot.forEach(place => {
-            placesList.push(`<a href="?Place=${place.id}">${place.name}</a>`)
+            placesList.push(`<a href="${this.mv.faceter.buildFilterLink('Place', place.id)}">${place.name}</a>`)
         })
 
         appendToEl(metaPane, `

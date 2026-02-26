@@ -8,19 +8,19 @@ class Faceter {
         this.filterTracker = {
             Tag: {
                 getParam: 'f_tags.id',
-                values: [],
+                values: new Set(),
                 availableValues: new Set(),
                 label: 'Tag'
             },
             Event: {
                 getParam: 'f_events.id',
-                values: [],
+                values: new Set(),
                 availableValues: new Set(),
                 label: 'Event'
             },
             Place: {
                 getParam: 'f_locations.id',
-                values: [],
+                values: new Set(),
                 availableValues: new Set(),
                 label: 'Place',
             }
@@ -42,6 +42,8 @@ class Faceter {
 
         document.addEventListener('click', (e) => {
             let link = e.target
+            let eventHandled = false
+
             if (link.closest('.facet-link')) {
                 let facet = link.dataset.facetType
                 let value = link.dataset.facetId
@@ -51,12 +53,21 @@ class Faceter {
                 } else {
                     this.applyFacet(facet, value)
                 }
+
+                eventHandled = true
             } else if (link.closest('.filter-delete-button')) {
                 let button = link.closest('.filter-delete-button')
                 let facet = button.dataset.facet
                 let value = button.dataset.id
 
                 this.removeFacet(facet, value)
+
+                eventHandled = true
+            }
+
+            if (eventHandled) {
+                e.preventDefault()
+                getEl('gallery-search-box').scrollIntoView({behavior: 'smooth'})
             }
         })
     }
@@ -115,27 +126,33 @@ class Faceter {
         Object.keys(facetCounter).forEach(facet => {
             getEl(`facet-list-${facet}-counter`).innerHTML = facetCounter[facet]
         })
+
+        let url = new URL(window.location.href)
+        url.search = ''
+        window.history.pushState({}, '', url)
     }
 
-    applyFacet(facet, value) {
+    applyFacet(facet, value, showGallery=true) {
         // reset any available values
         for (let facetType in this.filterTracker) this.filterTracker[facetType].availableValues.clear()
 
-        this.filterTracker[facet].values.push(value)
-        this.filterGallery()
+        this.filterTracker[facet].values.add(value)
+        if (showGallery) this.filterGallery()
     }
 
-    removeFacet(facet, value) {
+    removeFacet(facet, value, showGallery=true) {
         // reset any available values
         for (let facetType in this.filterTracker) this.filterTracker[facetType].availableValues.clear()
 
         if (facet === 'Search') this.search = null
-        else this.filterTracker[facet].values = this.filterTracker[facet].values.filter(val => val !== value)
+        else this.filterTracker[facet].values.delete(value)
 
-        if (Object.keys(this.buildFilters(false)).length) this.filterGallery()
-        else {
-            this.resetFacetList()
-            this.mv.showDefaultGalleries()
+        if (showGallery) {
+            if (Object.keys(this.buildFilters(false)).length) this.filterGallery()
+            else {
+                this.resetFacetList()
+                this.mv.showDefaultGalleries()
+            }
         }
     }
 
@@ -189,6 +206,8 @@ class Faceter {
             Object.keys(facetCounts).forEach(facet => {
                 getEl(`facet-list-${facet}-counter`).innerHTML = facetCounts[facet]
             })
+
+            this.buildFilterLink(null, null, true)
         })
     }
 
@@ -205,12 +224,10 @@ class Faceter {
         }
 
         Object.keys(this.filterTracker).forEach(facet => {
-            if (this.filterTracker[facet].values.length) {
+            if (this.filterTracker[facet].values.size) {
                 let param = this.filterTracker[facet].getParam
-                let value = this.filterTracker[facet].values.join('__')
 
-                //if (value.includes('__')) param += '|'
-                filters[param] = value
+                filters[param] = [...this.filterTracker[facet].values].join('__')
 
                 if (makeIndicators) {
                     this.filterTracker[facet].values.forEach(val => {
@@ -252,5 +269,30 @@ class Faceter {
         }
 
         return filters
+    }
+
+    buildFilterLink(facet=null, value=null, changeURL=false) {
+        let linkParams = []
+        let paramAdded = false
+
+        for (let trackedFacet in this.filterTracker) {
+            if (this.filterTracker[trackedFacet].values.size) {
+                let facetParams = [...this.filterTracker[trackedFacet].values]
+                if (facet === trackedFacet){
+                    facetParams.push(value)
+                    paramAdded = true
+                }
+                linkParams.push(`${trackedFacet}=${facetParams.join(',')}`)
+            }
+        }
+        if (!paramAdded && facet !== null) linkParams.push(`${facet}=${value}`)
+
+        if (changeURL) {
+            let url = new URL(window.location.href)
+            url.search = `?${linkParams.join('&')}`
+            window.history.pushState({}, '', url)
+        }
+
+        return `?${linkParams.join('&')}`
     }
 }

@@ -95,13 +95,6 @@ class Gallery {
                 if (callback !== null) callback()
             }
         })
-
-        document.addEventListener('click', (e) => {
-            let pane = e.target.closest('.gallery-pane')
-            if (pane) {
-                this.mv.detailer.showFeatureDetails(pane)
-            }
-        })
     }
 
     extractDimensions(imgURL) {
