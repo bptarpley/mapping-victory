@@ -45,7 +45,7 @@ class Detailer {
         this.modal.style.top = `${modalTop}px`
         this.modal.style.left = `${topGalleryRect.left}px`
         this.modal.style.width = `${topGalleryRect.width}px`
-        this.modal.style.marginBottom = '-50vh'
+        this.modal.style.marginBottom = '-60vh'
 
         return [metaPane, dragonPane]
     }

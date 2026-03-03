@@ -9,20 +9,30 @@ class Faceter {
             Tag: {
                 getParam: 'f_tags.id',
                 values: new Set(),
+                derivedValues: new Set(),
                 availableValues: new Set(),
                 label: 'Tag'
             },
             Event: {
                 getParam: 'f_events.id',
                 values: new Set(),
+                derivedValues: new Set(),
                 availableValues: new Set(),
                 label: 'Event'
             },
             Place: {
                 getParam: 'f_locations.id',
                 values: new Set(),
+                derivedValues: new Set(),
                 availableValues: new Set(),
                 label: 'Place',
+            },
+            Unit: {
+                getParam: '1_f_map.id|',
+                values: new Set(),
+                derivedValues: new Set(),
+                availableValues: new Set(),
+                label: 'Unit'
             }
         }
 
@@ -86,7 +96,7 @@ class Faceter {
 
         // build facet links
         let facetListContent = getEl(`facet-list-${contentType}-content`)
-        Object.keys(frequencyMap).forEach(facetID => {
+        for (let facetID in frequencyMap) {
             let facet = this.mv.corpus.getContent(contentType, facetID)
             appendToEl(facetListContent, `
                 <a href="#" id="facet-link-${contentType}-${facetID}" class="facet-link"
@@ -107,7 +117,7 @@ class Faceter {
 
             // set facet link counter
             this.facetLinks[`${contentType}-${facetID}`].counter.innerHTML = frequencyMap[facetID]
-        })
+        }
     }
 
     resetFacetList() {
@@ -136,7 +146,13 @@ class Faceter {
         // reset any available values
         for (let facetType in this.filterTracker) this.filterTracker[facetType].availableValues.clear()
 
+        if (facet === 'Unit') {
+            let maps = this.mv.corpus.getAssociatedContents('Unit', value, 'Map')
+            maps.forEach((map) => this.filterTracker['Unit'].derivedValues.add(map.id))
+        }
+
         this.filterTracker[facet].values.add(value)
+
         if (showGallery) this.filterGallery()
     }
 
@@ -146,6 +162,11 @@ class Faceter {
 
         if (facet === 'Search') this.search = null
         else this.filterTracker[facet].values.delete(value)
+
+        if (facet === 'Unit') {
+            let maps = this.mv.corpus.getAssociatedContents('Unit', value, 'Map')
+            maps.forEach((map) => this.filterTracker['Unit'].derivedValues.delete(map.id))
+        }
 
         if (showGallery) {
             if (Object.keys(this.buildFilters(false)).length) this.filterGallery()
@@ -167,7 +188,8 @@ class Faceter {
             let facetCounts = {
                 Tag: 0,
                 Event: 0,
-                Region: 0
+                Region: 0,
+                Unit: 0
             }
 
             Object.keys(this.facetLinks).forEach(facetLinkKey => {
@@ -223,11 +245,12 @@ class Faceter {
             this.searchBox.value = ''
         }
 
-        Object.keys(this.filterTracker).forEach(facet => {
+        for (let facet in this.filterTracker) {
             if (this.filterTracker[facet].values.size) {
                 let param = this.filterTracker[facet].getParam
 
-                filters[param] = [...this.filterTracker[facet].values].join('__')
+                if (this.filterTracker[facet].derivedValues.size) filters[param] = [...this.filterTracker[facet].derivedValues].join('__')
+                else filters[param] = [...this.filterTracker[facet].values].join('__')
 
                 if (makeIndicators) {
                     this.filterTracker[facet].values.forEach(val => {
@@ -245,7 +268,7 @@ class Faceter {
                     })
                 }
             }
-        })
+        }
 
         if (this.search !== null) {
             filters['q'] = this.search

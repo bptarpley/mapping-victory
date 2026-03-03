@@ -167,7 +167,7 @@ h1 {
 
 .gallery-container { width: 100%; max-height: 100vh; overflow-y: scroll; }
 .gallery-container.height-restricted {
-    max-height: 50vh;
+    max-height: 60vh;
 }
 
 .gallery-header {
@@ -213,7 +213,7 @@ h1 {
     position: sticky;
     color: #ecede4;
     background-color: rgba(36, 33, 25, 0.9);
-    height: 50vh;
+    height: 60vh;
     display: flex;
     flex-direction: column;
     padding: 0;
@@ -230,7 +230,7 @@ h1 {
 #feature-detail-content {
     display: flex;
     flex-direction: row;
-    height: calc(50vh - 50px);
+    height: calc(60vh - 50px);
     padding: 0 20px 20px 20px;
 }
 #feature-detail-meta-pane {

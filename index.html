@@ -79,42 +79,58 @@
                     callAPI(`${mv.api}/Feature/`, {'page-size': 0, 'a_terms_events': 'events.id'}, (eventInfo) => {
                         mv.faceter.buildFacetList('Event', 'Events', eventInfo.meta.aggregations.events)
 
-                        // PLACES
-                        callAPI(`${mv.api}/Feature/`, {'page-size': 0, 'a_terms_locations': 'locations.id'}, (locInfo) => {
-                            let locationCounts = locInfo.meta.aggregations.locations
-                            let regionCounts = {}
+                        // UNITS
+                        callAPI(`${mv.api}/Feature/`, {'page-size': 0, 'a_terms_maps': 'map.id'}, (mapInfo) => {
+                            let mapCounts = mapInfo.meta.aggregations.maps
+                            let unitCounts = {}
 
-                            Object.keys(locationCounts).forEach(locID => {
-                                let regions = mv.corpus.getAssociatedContents('Place', locID, 'Region')
-                                regions.forEach(region => {
-                                    if (!(region.id in regionCounts)) regionCounts[region.id] = 0
-                                    regionCounts[region.id] += locationCounts[locID]
+                            for (let mapID in mapCounts) {
+                                let units = mv.corpus.getAssociatedContents('Map', mapID, 'Unit')
+                                if (units.length) {
+                                    let unit = units[0]
+                                    if (!(unit.id in unitCounts)) unitCounts[unit.id] = 0
+                                    unitCounts[unit.id] += mapCounts[mapID]
+                                }
+                            }
+                            mv.faceter.buildFacetList('Unit', 'Units', unitCounts)
+
+                            // PLACES
+                            callAPI(`${mv.api}/Feature/`, {'page-size': 0, 'a_terms_locations': 'locations.id'}, (locInfo) => {
+                                let locationCounts = locInfo.meta.aggregations.locations
+                                let regionCounts = {}
+
+                                Object.keys(locationCounts).forEach(locID => {
+                                    let regions = mv.corpus.getAssociatedContents('Place', locID, 'Region')
+                                    regions.forEach(region => {
+                                        if (!(region.id in regionCounts)) regionCounts[region.id] = 0
+                                        regionCounts[region.id] += locationCounts[locID]
+                                    })
                                 })
-                            })
-                            mv.faceter.buildFacetList('Region', 'Places', regionCounts)
+                                mv.faceter.buildFacetList('Region', 'Places', regionCounts)
 
-                            // now that all facets are built, let's check to see if any GET params
-                            // were passed in, indicating that we want to filter our gallery immediately
-                            // on load
-                            let filteredOnLoad = false
-                            let filtersAvailableOnLoad = ['Tag', 'Event', 'Place']
-                            filtersAvailableOnLoad.forEach(filterAvailableOnLoad => {
-                                if (mv.urlParams.has(filterAvailableOnLoad)) {
-                                    let filterValues = mv.urlParams.get(filterAvailableOnLoad).split(',')
-                                    filterValues.forEach(val => window.mv.faceter.applyFacet(filterAvailableOnLoad, val, false))
-                                    filteredOnLoad = true
-                                }
-                            })
+                                // now that all facets are built, let's check to see if any GET params
+                                // were passed in, indicating that we want to filter our gallery immediately
+                                // on load
+                                let filteredOnLoad = false
+                                let filtersAvailableOnLoad = ['Tag', 'Event', 'Place', 'Unit']
+                                filtersAvailableOnLoad.forEach(filterAvailableOnLoad => {
+                                    if (mv.urlParams.has(filterAvailableOnLoad)) {
+                                        let filterValues = mv.urlParams.get(filterAvailableOnLoad).split(',')
+                                        filterValues.forEach(val => window.mv.faceter.applyFacet(filterAvailableOnLoad, val, false))
+                                        filteredOnLoad = true
+                                    }
+                                })
 
-                            if (filteredOnLoad) mv.faceter.filterGallery()
-                            else mv.showDefaultGalleries()
+                                if (filteredOnLoad) mv.faceter.filterGallery()
+                                else mv.showDefaultGalleries()
 
-                            // rig up gallery pane click event
-                            document.addEventListener('click', (e) => {
-                                let pane = e.target.closest('.gallery-pane')
-                                if (pane) {
-                                    window.mv.detailer.showFeatureDetails(pane)
-                                }
+                                // rig up gallery pane click event
+                                document.addEventListener('click', (e) => {
+                                    let pane = e.target.closest('.gallery-pane')
+                                    if (pane) {
+                                        window.mv.detailer.showFeatureDetails(pane)
+                                    }
+                                })
                             })
                         })
                     })

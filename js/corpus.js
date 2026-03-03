@@ -20,6 +20,12 @@ class Corpus {
                 sortField: 'name',
                 ids: []
             },
+            Unit: {
+                is_facet: true,
+                xRefs: [],
+                sortField: 'name',
+                ids: []
+            },
             Region: {
                 is_facet: true,
                 xRefs: [],
@@ -33,10 +39,11 @@ class Corpus {
                 ids: []
             },
             Map: {
-                is_facet: false,
+                is_facet: true,
                 xRefs: [
                     {field: 'artists', reference: 'Person', via: null, multi: true},
                     {field: 'printers', reference: 'Person', via: null, multi: true},
+                    {field: 'military_unit', reference: 'Unit', via: null, multi: false},
                 ],
                 sortField: 'title',
                 ids: []
@@ -44,6 +51,7 @@ class Corpus {
             Feature: {
                 is_facet: false,
                 xRefs: [
+                    {field: 'map', reference: 'Unit', via: 'Map', multi: false},
                     {field: 'tags', reference: 'Tag', via: null, multi: true},
                     {field: 'events', reference: 'Event', via: null, multi: true},
                     {field: 'locations', reference: 'Place', via: null, multi: true},
