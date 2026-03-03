@@ -3,7 +3,7 @@ class Gallery {
         this.mv = window.mv
         this.parent = parent
         this.contentType = contentType
-        this.defaultFilters = {'page': 1, 'page-size': 10000, 'only': 'id,image_url,title,tags.id,events.id,locations.id'}
+        this.defaultFilters = {'page': 1, 'page-size': 10000, 'only': 'id,image_url,title,map.id,tags.id,events.id,locations.id'}
         this.defaultFilters[`s_${this.mv.corpus.meta[contentType].sortField}`] = 'asc'
         this.filters = Object.assign(this.defaultFilters, filters)
         this.label = label
