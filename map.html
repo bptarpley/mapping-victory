@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapping Victory</title>
+    <link rel="stylesheet" href="https://use.typekit.net/jjk5ixf.css">
+    <link rel="stylesheet" href="js/leaflet/leaflet.css">
+    <link rel="stylesheet" href="js/markercluster/MarkerCluster.css">
+    <link type="text/css" rel="stylesheet" href="css/mapping_victory.css">
+</head>
+<body class="internal">
+<!-- SVG Graphics -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+    <symbol id="icon-close" viewBox="0 0 16 16">
+        <line x1="4" y1="4" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="12" y1="4" x2="4" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+</svg>
+
+<header class="internal">
+    <h1>Mapping Victory</h1>
+    <div class="header-links">
+        <a href="/">About</a>
+        <a href="/">Gallery</a>
+        <a href="/">Essays</a>
+    </div>
+</header>
+<main class="internal">
+    <h2 id="map-title"></h2>
+    <div class="map-detail-viewer">
+        <div id="metadata-div">
+
+        </div>
+        <div id="map-div">
+            <div id="dragon-div"></div>
+        </div>
+    </div>
+</main>
+<footer>
+
+</footer>
+
+<script src="js/openseadragon/openseadragon.min.js"></script>
+<script src="js/leaflet/leaflet.js"></script>
+<script src="js/markercluster/leaflet.markercluster.js"></script>
+<script src="js/utilities.js"></script>
+<script src="js/corpus.js"></script>
+<script src="js/faceter.js"></script>
+<script src="js/detailer.js"></script>
+<script src="js/map-feature.js"></script>
+
+<script language="javascript">
+    window.mv = {
+        corporaHost: 'https://corpora.library.tamu.edu',
+        corpusID: '66d0cf276083e79367c617c6',
+        corpus: null,
+        faceter: null,
+        dragon: null,
+        detailer: null,
+        mapID: null,
+        urlParams: new URLSearchParams(window.location.search),
+
+    }
+    window.mv['api'] = `${mv.corporaHost}/api/corpus/${mv.corpusID}`
+
+    // MAIN ENTRY POINT
+    document.addEventListener('DOMContentLoaded', function() {
+        mv.mapID = window.mv.urlParams.get('map-id')
+
+        if (mv.mapID) {
+            mv.corpus = new Corpus()
+
+            mv.corpus.build(() => {
+                callAPI(`${mv['api']}/Map/`, {f_id: mv.mapID}, (mapInfo) => {
+                    if (mapInfo.records && mapInfo.records?.length === 1) {
+                        let map = mapInfo.records[0]
+                        let metaDiv = getEl('metadata-div')
+                        mv.detailer = new Detailer('#map-div')
+                        mv.faceter = new Faceter(null)
+
+                        // title
+                        getEl('map-title').innerHTML = map.title
+
+                        // description
+                        if (map.description) {
+                            appendToEl(metaDiv, `
+                                <div class="feature-detail-metadatum">
+                                    <div class="feature-detail-metadatum-field">Description</div>
+                                    <div class="feature-detail-metadatum-value white-bg">${map.description}</div>
+                                </div>
+                            `)
+                        }
+
+                        // unit
+                        if (map.military_unit) {
+                            appendToEl(metaDiv, `
+                                <div class="feature-detail-metadatum">
+                                    <div class="feature-detail-metadatum-field">Unit</div>
+                                    <div class="feature-detail-metadatum-value white-bg">${map.military_unit.label}</div>
+                                </div>
+                            `)
+                        }
+
+                        // date
+                        if (map.date?.start) {
+                            appendToEl(metaDiv, `
+                                <div class="feature-detail-metadatum">
+                                    <div class="feature-detail-metadatum-field">Date</div>
+                                    <div class="feature-detail-metadatum-value white-bg">${parseDate(map.date.start)}</div>
+                                </div>
+                            `)
+                        }
+
+                        // artists
+                        if (map.artists && map.artists?.length) {
+                            let people = []
+                            map.artists.forEach(person => {
+                                people.push(`<a href="/">${person.label}</a>`)
+                            })
+                            appendToEl(metaDiv, `
+                                <div class="feature-detail-metadatum">
+                                    <div class="feature-detail-metadatum-field">Artists</div>
+                                    <div class="feature-detail-metadatum-value white-bg">${people.join('\n')}</div>
+                                </div>
+                            `)
+                        }
+
+                        // printers
+                        if (map.printers && map.printers?.length) {
+                            let people = []
+                            map.printers.forEach(person => {
+                                people.push(`<a href="/">${person.label}</a>`)
+                            })
+                            appendToEl(metaDiv, `
+                                <div class="feature-detail-metadatum">
+                                    <div class="feature-detail-metadatum-field">Printers</div>
+                                    <div class="feature-detail-metadatum-value white-bg">${people.join('\n')}</div>
+                                </div>
+                            `)
+                        }
+
+                        // MAP IMAGE
+                        mv.dragon = OpenSeadragon({
+                            id: 'dragon-div',
+                            prefixUrl: 'js/openseadragon/images/',
+                            tileSources: `${map.iiif_url}/info.json`
+                        })
+                        mv.dragon.addHandler('open', () => {
+                            const tiledImage = mv.dragon.world.getItemAt(0)
+                            const imageBounds = tiledImage.getBounds()
+
+                            // Get the viewport height in image coordinates
+                            const viewportHeight = mv.dragon.viewport.getBoundsNoRotate().height
+
+                            // Center X on the image, set Y so image top aligns with viewport top
+                            const centerX = imageBounds.x + imageBounds.width / 2
+                            const centerY = imageBounds.y + viewportHeight / 2
+
+                            mv.dragon.viewport.panTo(new OpenSeadragon.Point(centerX, centerY), true)
+
+                            // FEATURES
+                            makeFeatures(metaDiv)
+                        })
+                    }
+                })
+            })
+        }
+    })
+
+    function makeFeatures(metaDiv) {
+        console.log(callAPI)
+        callAPI(`${mv['api']}/Feature/`, {'f_map.id': mv.mapID, s_title: 'asc', 'page-size': 1000}, (featureInfo) => {
+
+            if (featureInfo.records) {
+
+                appendToEl(metaDiv, `
+                    <div class="feature-detail-metadatum values-below">
+                        <div class="feature-detail-metadatum-field">Features</div>
+                        <div id="feature-div" class="feature-detail-metadatum-value white-bg"></div>
+                    </div>
+                `)
+                let featureDiv = getEl('feature-div')
+                let dragon = window.mv.dragon
+                let colorClasses = ['yellow', 'red', 'blue']
+
+                featureInfo.records.forEach((feature, featureCount) => {
+                    let colorClass = colorClasses[featureCount % colorClasses.length]
+                    let d = extractFeatureDimensions(feature.image_url)
+
+                    // sanity check
+                    if (d.width > 0) {
+                        // create feature link
+                        appendToEl(featureDiv, `
+                        <a href="#" id="feature-link-${feature.id}" class="feature-link clickable-feature"
+                            data-id="${feature.id}"
+                            data-uri="${d.uri}"
+                            data-x="${d.x}"
+                            data-y="${d.y}"
+                            data-width="${d.width}"
+                            data-height="${d.height}">
+                                ${feature.label}
+                        </a>
+                        <div id="feature-metadata-pane-${feature.id}" class="feature-metadata-pane"></div>
+                    `)
+
+                        // create overlay
+                        let imageRect = new OpenSeadragon.Rect(
+                            d.x,
+                            d.y,
+                            d.width,
+                            d.height
+                        )
+                        let viewportRect = dragon.viewport.imageToViewportRectangle(imageRect)
+
+                        let overlay = document.createElement('div')
+                        overlay.id = `feature-overlay-${feature.id}`
+                        overlay.dataset.id = feature.id
+                        overlay.dataset.uri = d.uri
+                        overlay.dataset.x = d.x
+                        overlay.dataset.y = d.y
+                        overlay.dataset.width = d.width
+                        overlay.dataset.height = d.height
+                        overlay.classList.add('feature-overlay')
+                        overlay.classList.add(colorClass)
+
+                        dragon.addOverlay({ element: overlay, location: viewportRect })
+                    }
+                })
+
+                // rig up click events for features
+                forElsMatching('.clickable-feature', (featureEl) => {
+                    featureEl.addEventListener('click', (e) => {
+                        window.mv.detailer.showFeatureDetails(e.target, getEl(`feature-metadata-pane-${e.target.dataset.id}`))
+                        e.preventDefault()
+                    })
+                })
+
+                forElsMatching('.feature-overlay', (overlay) => {
+                    let mouseTracker = new OpenSeadragon.MouseTracker({
+                        element: overlay,
+                        clickHandler: (e) => {
+                            window.mv.detailer.showFeatureDetails(overlay, getEl(`feature-metadata-pane-${overlay.dataset.id}`))
+                            return true
+                        }
+                    })
+                })
+            }
+        })
+    }
+
+</script>
+</body>
+</html>

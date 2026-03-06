@@ -36,50 +36,51 @@ class Faceter {
             }
         }
 
-        this.searchBox = getEl('gallery-search-box')
-        this.searchBox.addEventListener('keydown', (e) => {
-            clearTimeout(this.searchTimer)
-            this.searchTimer = setTimeout(() => {
-                if (this.searchBox.value) {
-                    this.search = this.searchBox.value
-                    this.filterGallery()
+        if (this.parent) {
+            this.searchBox = getEl('gallery-search-box')
+            this.searchBox.addEventListener('keydown', (e) => {
+                clearTimeout(this.searchTimer)
+                this.searchTimer = setTimeout(() => {
+                    if (this.searchBox.value) {
+                        this.search = this.searchBox.value
+                        this.filterGallery()
+                    } else this.search = null
+                }, 1500)
+            })
+            this.searchBox.addEventListener('focusin', (e) => this.searchBox.setAttribute('placeholder', ''))
+            this.searchBox.addEventListener('focusout', (e) => this.searchBox.setAttribute('placeholder', 'Search'))
+
+            document.addEventListener('click', (e) => {
+                let link = e.target
+                let eventHandled = false
+
+                if (link.closest('.facet-link')) {
+                    let facet = link.dataset.facetType
+                    let value = link.dataset.facetId
+
+                    if (facet === 'Region') {
+                        this.mv.detailer.showRegionMap(value)
+                    } else {
+                        this.applyFacet(facet, value)
+                    }
+
+                    eventHandled = true
+                } else if (link.closest('.filter-delete-button')) {
+                    let button = link.closest('.filter-delete-button')
+                    let facet = button.dataset.facet
+                    let value = button.dataset.id
+
+                    this.removeFacet(facet, value)
+
+                    eventHandled = true
                 }
-                else this.search = null
-            }, 1500)
-        })
-        this.searchBox.addEventListener('focusin', (e) => this.searchBox.setAttribute('placeholder', ''))
-        this.searchBox.addEventListener('focusout', (e) => this.searchBox.setAttribute('placeholder', 'Search'))
 
-        document.addEventListener('click', (e) => {
-            let link = e.target
-            let eventHandled = false
-
-            if (link.closest('.facet-link')) {
-                let facet = link.dataset.facetType
-                let value = link.dataset.facetId
-
-                if (facet === 'Region') {
-                    this.mv.detailer.showRegionMap(value)
-                } else {
-                    this.applyFacet(facet, value)
+                if (eventHandled) {
+                    e.preventDefault()
+                    getEl('gallery-search-box').scrollIntoView({behavior: 'smooth'})
                 }
-
-                eventHandled = true
-            } else if (link.closest('.filter-delete-button')) {
-                let button = link.closest('.filter-delete-button')
-                let facet = button.dataset.facet
-                let value = button.dataset.id
-
-                this.removeFacet(facet, value)
-
-                eventHandled = true
-            }
-
-            if (eventHandled) {
-                e.preventDefault()
-                getEl('gallery-search-box').scrollIntoView({behavior: 'smooth'})
-            }
-        })
+            })
+        }
     }
 
     buildFacetList(contentType, label, frequencyMap) {
