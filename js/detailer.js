@@ -94,7 +94,7 @@ class Detailer {
                         <div class="feature-detail-metadatum">
                             <div class="feature-detail-metadatum-field">Map</div>
                             <div class="feature-detail-metadatum-value">
-                                <a href="/map.html?map-id=${feature.map.id}" target="_blank">${feature.map.title}</a>
+                                <a href="map.html?map-id=${feature.map.id}" target="_blank">${feature.map.title}</a>
                             </div>
                         </div>
                     ` : ''}
