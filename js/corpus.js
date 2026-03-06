@@ -46,6 +46,8 @@ class Corpus {
                     {field: 'military_unit', reference: 'Unit', via: null, multi: false},
                 ],
                 sortField: 'title',
+                imageField: 'iiif_url',
+                titleField: 'title',
                 ids: []
             },
             Feature: {

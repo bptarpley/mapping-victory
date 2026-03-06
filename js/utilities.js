@@ -131,3 +131,33 @@ function delayedScroll(anchor, smooth=true, parent=null) {
         if (anchorSelectedEl) anchorSelectedEl.scrollIntoView(scrollOpts)
     }
 }
+function parseDate(timestamp) {
+    return new Date(timestamp).toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+    })
+}
+function extractFeatureDimensions(imgURL) {
+    const match = imgURL.match(/(.*)\/([^\/]*)\/[^\/]*,[^\/]*\/0\/default.jpg$/)
+
+    // if there's a match, it means we're dealing with a Feature
+    if (match) {
+        let [imgX, imgY, imgWidth, imgHeight] = match[2].split(',')
+        return {
+            uri: match[1],
+            x: parseInt(imgX),
+            y: parseInt(imgY),
+            width: parseInt(imgWidth),
+            height: parseInt(imgHeight)
+        }
+
+        // if no match, we've got a Map
+    } else return {
+        uri: imgURL,
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0
+    }
+}

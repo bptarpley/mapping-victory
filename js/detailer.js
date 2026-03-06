@@ -1,7 +1,7 @@
 class Detailer {
-    constructor() {
+    constructor(parentQuery) {
         this.mv = window.mv
-        this.galleryDiv = getEl('gallery-div')
+        this.parentEl = getElWithQuery(parentQuery)
         this.modal = null
         this.dragon = null
 
@@ -28,7 +28,7 @@ class Detailer {
         // ensure modal exists
         this.modal = getEl('feature-detail-modal')
         if (!this.modal) {
-            prependToEl(this.galleryDiv, this.modalTemplate)
+            prependToEl(this.parentEl, this.modalTemplate)
             getEl('feature-detail-close-button').addEventListener('click', (e) => { hideEl(this.modal) })
         }
         this.modal = getEl('feature-detail-modal')
@@ -40,18 +40,20 @@ class Detailer {
         clearEl(dragonPane)
 
         // size and position modal appropriately
-        let topGalleryRect = getElWithQuery('.gallery-content').getBoundingClientRect()
-        let modalTop = parseInt(topGalleryRect.top)
-        this.modal.style.top = `${modalTop}px`
-        this.modal.style.left = `${topGalleryRect.left}px`
-        this.modal.style.width = `${topGalleryRect.width}px`
-        this.modal.style.marginBottom = '-60vh'
+        let topGalleryRect = this.parentEl.getBoundingClientRect()
+        //this.modal.style.left = `${topGalleryRect.left}px`
+        //this.modal.style.width = `${topGalleryRect.width}px`
 
-        return [metaPane, dragonPane]
+        return metaPane
     }
 
-    showFeatureDetails(pane) {
-        let [metaPane, dragonPane] = this.ensureModal()
+    showFeatureDetails(pane, metadataPane=null) {
+        let metaPane = metadataPane
+        if (metaPane === null) metaPane = this.ensureModal()
+        else {
+            let openPane = getElWithQuery('.feature-metadata-pane.visible')
+            if (openPane !== null) openPane.classList.remove('visible')
+        }
 
         // fetch data, display details, and show modal
         callAPI(`${this.mv.api}/Feature/?f_id=${pane.dataset.id}`, {}, featureData => {
@@ -86,62 +88,79 @@ class Detailer {
                 }
 
                 appendToEl(metaPane, `
-                    <div class="feature-detail-title">${feature.title}</div>
-                    <!-- map -->
-                    <div class="feature-detail-metadatum">
-                        <div class="feature-detail-metadatum-field">Map</div>
-                        <div class="feature-detail-metadatum-value">
-                            <a href="/map.html?id=${feature.map.id}" target="_blank">${feature.map.title}</a>
+                    ${metadataPane === null ? `
+                        <div class="feature-detail-title">${feature.title}</div>
+                        <!-- map -->
+                        <div class="feature-detail-metadatum">
+                            <div class="feature-detail-metadatum-field">Map</div>
+                            <div class="feature-detail-metadatum-value">
+                                <a href="/map.html?map-id=${feature.map.id}" target="_blank">${feature.map.title}</a>
+                            </div>
                         </div>
-                    </div>
+                    ` : ''}
                     <!-- description -->
-                    <div class="feature-detail-metadatum">
+                    <div class="feature-detail-metadatum${metadataPane === null ? '' : ' values-below'}">
                         <div class="feature-detail-metadatum-field">Description</div>
                         <div class="feature-detail-metadatum-value">${feature.description}</div>
                     </div>
                     <!-- tags -->
                     ${ tags.length ? `
-                    <div class="feature-detail-metadatum">
+                    <div class="feature-detail-metadatum${metadataPane === null ? '' : ' values-below'}">
                         <div class="feature-detail-metadatum-field">Tags</div>
                         <div class="feature-detail-metadatum-value">${tags.join('\n')}</div>
                     </div>
                     ` : ''}
                     <!-- events -->
                     ${ events.length ? `
-                    <div class="feature-detail-metadatum">
+                    <div class="feature-detail-metadatum${metadataPane === null ? '' : ' values-below'}">
                         <div class="feature-detail-metadatum-field">Events</div>
                         <div class="feature-detail-metadatum-value">${events.join('\n')}</div>
                     </div>
                     ` : ''}
                     <!-- places -->
                     ${ places.length ? `
-                    <div class="feature-detail-metadatum">
+                    <div class="feature-detail-metadatum${metadataPane === null ? '' : ' values-below'}">
                         <div class="feature-detail-metadatum-field">Places</div>
                         <div class="feature-detail-metadatum-value">${places.join('\n')}</div>
                     </div>
                     ` : ''}
                 `)
 
-                this.dragon = OpenSeadragon({
-                    id: 'feature-detail-dragon-pane',
-                    prefixUrl: 'js/openseadragon/images/',
-                    tileSources: `${pane.dataset.uri}/info.json`
-                })
+                if (metadataPane === null) {
+                    this.dragon = OpenSeadragon({
+                        id: 'feature-detail-dragon-pane',
+                        prefixUrl: 'js/openseadragon/images/',
+                        tileSources: `${pane.dataset.uri}/info.json`
+                    })
 
-                this.dragon.addHandler('open', () => {
-                    setTimeout(() => {
-                        let region = new OpenSeadragon.Rect(
-                            parseInt(pane.dataset.x),
-                            parseInt(pane.dataset.y),
-                            parseInt(pane.dataset.width),
-                            parseInt(pane.dataset.height)
-                        )
-                        let viewPortRect = this.dragon.viewport.imageToViewportRectangle(region)
-                        this.dragon.viewport.fitBounds(viewPortRect)
-                    }, 1000)
-                })
+                    this.dragon.addHandler('open', () => {
+                        setTimeout(() => {
+                            let region = new OpenSeadragon.Rect(
+                                parseInt(pane.dataset.x),
+                                parseInt(pane.dataset.y),
+                                parseInt(pane.dataset.width),
+                                parseInt(pane.dataset.height)
+                            )
+                            let viewPortRect = this.dragon.viewport.imageToViewportRectangle(region)
+                            this.dragon.viewport.fitBounds(viewPortRect)
+                        }, 1000)
+                    })
 
-                showEl(this.modal)
+                    showEl(this.modal)
+                    this.parentEl.scrollIntoView({behavior: 'smooth', block: 'start'})
+                } else {
+                    metaPane.classList.add('visible')
+                    metaPane.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+                    let region = new OpenSeadragon.Rect(
+                        parseInt(pane.dataset.x),
+                        parseInt(pane.dataset.y),
+                        parseInt(pane.dataset.width),
+                        parseInt(pane.dataset.height)
+                    )
+                    let viewPortRect = mv.dragon.viewport.imageToViewportRectangle(region)
+                    mv.dragon.viewport.fitBounds(viewPortRect)
+                }
             }
         })
     }

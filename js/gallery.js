@@ -5,6 +5,7 @@ class Gallery {
         this.contentType = contentType
         this.defaultFilters = {'page': 1, 'page-size': 10000, 'only': 'id,image_url,title,map.id,tags.id,events.id,locations.id'}
         this.defaultFilters[`s_${this.mv.corpus.meta[contentType].sortField}`] = 'asc'
+        this.defaultFilters[`e_${this.mv.corpus.meta[contentType].imageField}`] = 'y'
         this.filters = Object.assign(this.defaultFilters, filters)
         this.label = label
         this.galleryID = 0
@@ -29,41 +30,34 @@ class Gallery {
         this.element = getEl(`gallery-${this.galleryID}`)
         this.galleryContentDiv = getEl(`gallery-${this.galleryID}-content`)
 
+        // adjust according to content type
+        if (contentType === 'Map') {
+            this.defaultFilters['only'] = 'iiif_url,title,military_unit.id'
+            this.galleryContentDiv.classList.add('map')
+        }
+
         this.paneObserver = new IntersectionObserver((entries) => {
             entries.forEach((entry, index) => {
                 if (entry.isIntersecting) {
                     let pane = entry.target
 
                     if (!pane.hasAttribute('data-loaded')) {
-                        const rect = pane.getBoundingClientRect()
-                        let divWidth = parseInt(rect.width)
-                        let divHeight = parseInt(rect.height)
-                        let maxImageWidth = parseInt(pane.dataset.width)
-                        let maxImageHeight = parseInt(pane.dataset.height)
-                        let requestedWidth = divWidth
-                        let requestedHeight = divHeight
+                        if (this.contentType === 'Map') {
+                            callAPI(`${pane.dataset.uri}/info.json`, {}, imgInfo => {
+                                pane.dataset.height = imgInfo.height
+                                pane.dataset.width = imgInfo.width
 
-                        if (requestedWidth > maxImageWidth) requestedWidth = maxImageWidth
-                        if (requestedHeight > maxImageHeight) requestedHeight = maxImageHeight
-
-                        let imgSizeSpec = `${requestedWidth},`
-                        if (maxImageHeight < maxImageWidth) imgSizeSpec = `,${requestedHeight}`
-
-                        let imgSrc = `${pane.dataset.uri}/${pane.dataset.x},${pane.dataset.y},${pane.dataset.width},${pane.dataset.height}/`
-                        imgSrc += `${imgSizeSpec}/0/default.jpg`
-
-                        pane.innerHTML = `
-                            <img src="${imgSrc}" alt="${escapeAttrVal(pane.dataset.title)}"></img>
-                        `
-
-                        pane.setAttribute('data-loaded', 'y')
+                                this.buildImagePane(pane)
+                            })
+                        }
+                        else if (this.contentType === 'Feature') this.buildImagePane(pane)
                     }
                 }
             })
         })
 
         this.imageTemplate = (p) => `
-            <div id="gallery-pane-${p.id}" class="gallery-pane" data-id="${p.id}"
+            <div id="gallery-pane-${p.id}" class="gallery-pane${this.contentType === 'Map' ? ' map' : ''}" data-id="${p.id}"
                 data-uri="${p.uri}"
                 data-x="${p.x}"
                 data-y="${p.y}"
@@ -78,7 +72,7 @@ class Gallery {
                 getEl(`gallery-${this.galleryID}-count-badge`).innerHTML = imgData.records.length
 
                 imgData.records.forEach((image) => {
-                    let imgInfo = this.extractDimensions(image[this.mv.corpus.meta[this.contentType].imageField])
+                    let imgInfo = extractFeatureDimensions(image[this.mv.corpus.meta[this.contentType].imageField])
                     if (imgInfo !== null) {
                         imgInfo['id'] = image.id
                         imgInfo['title'] = image.title
@@ -97,17 +91,38 @@ class Gallery {
         })
     }
 
-    extractDimensions(imgURL) {
-        const match = imgURL.match(/(.*)\/([^\/]*)\/[^\/]*,[^\/]*\/0\/default.jpg$/)
-        if (match) {
-            let [imgX, imgY, imgWidth, imgHeight] = match[2].split(',')
-            return {
-                uri: match[1],
-                x: imgX,
-                y: imgY,
-                width: imgWidth,
-                height: imgHeight
-            }
-        } else return null
+    buildImagePane(pane) {
+        const rect = pane.getBoundingClientRect()
+        let divWidth = parseInt(rect.width)
+        let divHeight = parseInt(rect.height)
+        let maxImageWidth = parseInt(pane.dataset.width)
+        let maxImageHeight = parseInt(pane.dataset.height)
+        let requestedWidth = divWidth
+        let requestedHeight = divHeight
+        let regionSpec = 'full'
+        let rotation = 0
+
+        if (requestedWidth > maxImageWidth) requestedWidth = maxImageWidth
+        if (requestedHeight > maxImageHeight) requestedHeight = maxImageHeight
+
+        let imgSizeSpec = `${requestedWidth},`
+        if (maxImageHeight < maxImageWidth) imgSizeSpec = `,${requestedHeight}`
+
+        if (this.contentType === 'Feature') regionSpec = `${pane.dataset.x},${pane.dataset.y},${pane.dataset.width},${pane.dataset.height}`
+        else if (this.contentType === 'Map' && maxImageHeight > maxImageWidth) {
+            //let ratio = maxImageWidth / requestedWidth
+            //let regionHeight = parseInt(ratio * requestedHeight)
+
+            //regionSpec = `0,0,${maxImageWidth},${regionHeight}`
+            rotation = 270
+        }
+
+        let imgSrc = `${pane.dataset.uri}/${regionSpec}/${imgSizeSpec}/${rotation}/default.jpg`
+
+        pane.innerHTML = `
+            <img src="${imgSrc}" alt="${escapeAttrVal(pane.dataset.title)}"></img>
+        `
+
+        pane.setAttribute('data-loaded', 'y')
     }
 }
