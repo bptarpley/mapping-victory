@@ -1,37 +1,32 @@
 class Faceter {
-    constructor(parent) {
+    constructor(parent, targetCT) {
         this.mv = window.mv
         this.parent = parent
+        this.targetCT = targetCT
         this.facetLinks = {}
         this.search = null
+        this.searchTargetIDs = new Set()
         this.searchTimer = null
         this.filterTracker = {
             Tag: {
-                getParam: 'f_tags.id',
                 values: new Set(),
-                derivedValues: new Set(),
-                availableValues: new Set(),
+                targetIDs: new Set(),
                 label: 'Tag'
             },
             Event: {
-                getParam: 'f_events.id',
                 values: new Set(),
-                derivedValues: new Set(),
-                availableValues: new Set(),
+                targetIDs: new Set(),
                 label: 'Event'
             },
             Place: {
-                getParam: 'f_locations.id',
                 values: new Set(),
-                derivedValues: new Set(),
                 availableValues: new Set(),
+                targetIDs: new Set(),
                 label: 'Place',
             },
             Unit: {
-                getParam: '1_f_map.id|',
                 values: new Set(),
-                derivedValues: new Set(),
-                availableValues: new Set(),
+                targetIDs: new Set(),
                 label: 'Unit'
             }
         }
@@ -43,7 +38,16 @@ class Faceter {
                 this.searchTimer = setTimeout(() => {
                     if (this.searchBox.value) {
                         this.search = this.searchBox.value
-                        this.filterGallery()
+                        this.searchTargetIDs.clear()
+
+                        callAPI(`${this.mv.api}/${this.targetCT}`, {q: this.search, only: 'id'}, searchResults => {
+                            if (searchResults.records) {
+                                searchResults.records.forEach(hit => {
+                                    this.searchTargetIDs.add(hit.id)
+                                })
+                                this.filterGallery()
+                            }
+                        })
                     } else this.search = null
                 }, 1500)
             })
@@ -83,7 +87,15 @@ class Faceter {
         }
     }
 
-    buildFacetList(contentType, label, frequencyMap) {
+    buildFacetList(contentType, label) {
+        let frequencyMap = {}
+        let facetContents = this.mv.corpus.getContents(contentType)
+        facetContents.forEach(facetContent => {
+            let facetCount = this.mv.corpus.getTotalConnections(contentType, facetContent.id, this.targetCT)
+            if (facetCount > 0) frequencyMap[facetContent.id] = facetCount
+        })
+        let sortedByFrequency = Object.keys(frequencyMap).sort((a, b) => frequencyMap[b] - frequencyMap[a])
+
         appendToEl(this.parent, `
             <div class="facet-list">
                 <div class="facet-list-header">${label} <span id="facet-list-${contentType}-counter" class="count-badge"></span></div>
@@ -97,7 +109,7 @@ class Faceter {
 
         // build facet links
         let facetListContent = getEl(`facet-list-${contentType}-content`)
-        for (let facetID in frequencyMap) {
+        sortedByFrequency.forEach(facetID => {
             let facet = this.mv.corpus.getContent(contentType, facetID)
             appendToEl(facetListContent, `
                 <a href="#" id="facet-link-${contentType}-${facetID}" class="facet-link"
@@ -118,14 +130,14 @@ class Faceter {
 
             // set facet link counter
             this.facetLinks[`${contentType}-${facetID}`].counter.innerHTML = frequencyMap[facetID]
-        }
+        })
     }
 
     resetFacetList() {
         let facetCounter = {}
         clearEl(getEl('filter-indicator-div'))
 
-        Object.keys(this.facetLinks).forEach(facetLinkKey => {
+        forEachKey(this.facetLinks, facetLinkKey => {
             showEl(this.facetLinks[facetLinkKey].link)
             this.facetLinks[facetLinkKey].counter.innerHTML = this.facetLinks[facetLinkKey].totalCount
 
@@ -134,7 +146,7 @@ class Faceter {
             facetCounter[ct] += 1
         })
 
-        Object.keys(facetCounter).forEach(facet => {
+        forEachKey(facetCounter, facet => {
             getEl(`facet-list-${facet}-counter`).innerHTML = facetCounter[facet]
         })
 
@@ -144,33 +156,48 @@ class Faceter {
     }
 
     applyFacet(facet, value, showGallery=true) {
-        // reset any available values
-        for (let facetType in this.filterTracker) this.filterTracker[facetType].availableValues.clear()
-
-        if (facet === 'Unit') {
-            let maps = this.mv.corpus.getAssociatedContents('Unit', value, 'Map')
-            maps.forEach((map) => this.filterTracker['Unit'].derivedValues.add(map.id))
-        }
-
+        // add the value to this facet
         this.filterTracker[facet].values.add(value)
+
+        // find associated target IDs
+        let targetContents = this.mv.corpus.getAssociatedContents(facet, value, this.targetCT)
+        let targetContentIDs = new Set(targetContents.map(targetContent => targetContent.id))
+
+        if (this.filterTracker[facet].targetIDs.size)
+            this.filterTracker[facet].targetIDs = this.filterTracker[facet].targetIDs.intersection(targetContentIDs)
+        else
+            this.filterTracker[facet].targetIDs = targetContentIDs
 
         if (showGallery) this.filterGallery()
     }
 
     removeFacet(facet, value, showGallery=true) {
-        // reset any available values
-        for (let facetType in this.filterTracker) this.filterTracker[facetType].availableValues.clear()
-
         if (facet === 'Search') this.search = null
-        else this.filterTracker[facet].values.delete(value)
+        else {
+            this.filterTracker[facet].values.delete(value)
 
-        if (facet === 'Unit') {
-            let maps = this.mv.corpus.getAssociatedContents('Unit', value, 'Map')
-            maps.forEach((map) => this.filterTracker['Unit'].derivedValues.delete(map.id))
+            // rebuild associated target ids
+            this.filterTracker[facet].targetIDs.clear()
+            this.filterTracker[facet].values.forEach(facetID => {
+                let targetContents = this.mv.corpus.getAssociatedContents(facet, facetID, this.targetCT)
+                let targetContentIDs = new Set(targetContents.map(targetContent => targetContent.id))
+
+                if (this.filterTracker[facet].targetIDs.size)
+                    this.filterTracker[facet].targetIDs = this.filterTracker[facet].targetIDs.intersection(targetContentIDs)
+                else
+                    this.filterTracker[facet].targetIDs = targetContentIDs
+            })
         }
 
         if (showGallery) {
-            if (Object.keys(this.buildFilters(false)).length) this.filterGallery()
+            let hasFilters = false
+            for (let facet in this.filterTracker) {
+                if (this.filterTracker[facet].values.size) {
+                    hasFilters = true
+                }
+            }
+
+            if (hasFilters) this.filterGallery()
             else {
                 this.resetFacetList()
                 this.mv.showDefaultGalleries()
@@ -184,7 +211,7 @@ class Faceter {
         clearEl(galleryDiv)
         mv.galleryIDs.clear()
 
-        let g = new Gallery(galleryDiv, 'Feature', 'Filtered', false, this.buildFilters(), () => {
+        let g = new Gallery(galleryDiv, this.targetCT, 'Filtered', false, this.buildFilters(), () => {
             let visibleFacetLinks = new Set()
             let facetCounts = {
                 Tag: 0,
@@ -193,13 +220,21 @@ class Faceter {
                 Unit: 0
             }
 
-            Object.keys(this.facetLinks).forEach(facetLinkKey => {
+            // hide all facet links so we can see which ones are relevant
+            forEachKey(this.facetLinks, facetLinkKey => {
                 hideEl(this.facetLinks[facetLinkKey].link)
                 this.facetLinks[facetLinkKey].count = 0
             })
 
-            mv.galleryIDs.forEach(featureID => {
-                let associatedContent = mv.corpus.getAssociatedContents('Feature', featureID)
+            // remove any "available values" for indirectly determined facets like Place
+            forEachKey(this.filterTracker, facet => {
+                if (this.filterTracker[facet].hasOwnProperty('availableValues')) {
+                    this.filterTracker[facet].availableValues.clear()
+                }
+            })
+
+            mv.galleryIDs.forEach(targetID => {
+                let associatedContent = mv.corpus.getAssociatedContents(this.targetCT, targetID)
                 associatedContent.forEach(content => {
                     let ct = content.contentType
                     let id = content.id
@@ -215,7 +250,9 @@ class Faceter {
                                 }
                                 this.facetLinks[facetLinkKey].count += 1
                             } else if (ct in this.filterTracker) {
-                                this.filterTracker[ct].availableValues.add(id)
+                                if (this.filterTracker[ct].hasOwnProperty('availableValues')) {
+                                    this.filterTracker[ct].availableValues.add(id)
+                                }
                             }
                         }
                     }
@@ -235,10 +272,11 @@ class Faceter {
     }
 
     buildFilters(makeIndicators=true) {
-        let filters = {}
         let filterIndicatorDiv = null
         let bgClasses = ['yellow', 'red', 'blue']
         let filterCounter = 0
+        let targetIDSets = []
+        let hasFilters = false
 
         if (makeIndicators) {
             filterIndicatorDiv = getEl('filter-indicator-div')
@@ -248,10 +286,8 @@ class Faceter {
 
         for (let facet in this.filterTracker) {
             if (this.filterTracker[facet].values.size) {
-                let param = this.filterTracker[facet].getParam
-
-                if (this.filterTracker[facet].derivedValues.size) filters[param] = [...this.filterTracker[facet].derivedValues].join('__')
-                else filters[param] = [...this.filterTracker[facet].values].join('__')
+                hasFilters = true
+                targetIDSets.push(this.filterTracker[facet].targetIDs)
 
                 if (makeIndicators) {
                     this.filterTracker[facet].values.forEach(val => {
@@ -272,27 +308,33 @@ class Faceter {
         }
 
         if (this.search !== null) {
-            filters['q'] = this.search
+            targetIDSets.push(this.searchTargetIDs)
 
             if (makeIndicators) {
                 appendToEl(filterIndicatorDiv, `
-                <span class="filter-indicator ${bgClasses[filterCounter % bgClasses.length]}">
-                    Search: ${this.search}
-                    <button class="filter-delete-button" aria-label="Delete"
-                        data-facet="Search" data-id="">
-                        <svg width="14" height="14"><use href="#icon-close"/></svg>
-                    </button>
-                </span>
-            `)
+                    <span class="filter-indicator ${bgClasses[filterCounter % bgClasses.length]}">
+                        Search: ${this.search}
+                        <button class="filter-delete-button" aria-label="Delete"
+                            data-facet="Search" data-id="">
+                            <svg width="14" height="14"><use href="#icon-close"/></svg>
+                        </button>
+                    </span>
+                `)
             }
         }
 
         if (makeIndicators) {
-            if (Object.keys(filters).length) showEl(filterIndicatorDiv)
+            if (hasFilters) showEl(filterIndicatorDiv)
             else hideEl(filterIndicatorDiv)
         }
 
-        return filters
+        return this.findIntersectingTargetIDs(targetIDSets)
+    }
+
+    findIntersectingTargetIDs(targetIDSets) {
+        console.log(targetIDSets)
+        const [first, ...rest] = targetIDSets
+        return new Set([...first].filter(id => rest.every(set => set.has(id))))
     }
 
     buildFilterLink(facet=null, value=null, changeURL=false) {

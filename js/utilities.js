@@ -161,3 +161,6 @@ function extractFeatureDimensions(imgURL) {
         height: 0
     }
 }
+function forEachKey(obj, callback) {
+    Object.keys(obj).forEach(key => callback(key))
+}

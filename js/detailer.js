@@ -44,15 +44,20 @@ class Detailer {
         //this.modal.style.left = `${topGalleryRect.left}px`
         //this.modal.style.width = `${topGalleryRect.width}px`
 
-        return metaPane
+        return [metaPane, dragonPane]
     }
 
     showFeatureDetails(pane, metadataPane=null) {
         let metaPane = metadataPane
-        if (metaPane === null) metaPane = this.ensureModal()
+        let dragonPane = null
+
+        if (metaPane === null) [metaPane, dragonPane] = this.ensureModal()
         else {
+            clearEl(metaPane)
             let openPane = getElWithQuery('.feature-metadata-pane.visible')
             if (openPane !== null) openPane.classList.remove('visible')
+            let showcasedOverlay = getElWithQuery('.feature-overlay.showcased')
+            if (showcasedOverlay !== null) showcasedOverlay.classList.remove('showcased')
         }
 
         // fetch data, display details, and show modal
@@ -99,10 +104,12 @@ class Detailer {
                         </div>
                     ` : ''}
                     <!-- description -->
+                    ${ feature.description ? `
                     <div class="feature-detail-metadatum${metadataPane === null ? '' : ' values-below'}">
                         <div class="feature-detail-metadatum-field">Description</div>
                         <div class="feature-detail-metadatum-value">${feature.description}</div>
                     </div>
+                    ` : ''}
                     <!-- tags -->
                     ${ tags.length ? `
                     <div class="feature-detail-metadatum${metadataPane === null ? '' : ' values-below'}">
@@ -130,7 +137,7 @@ class Detailer {
                     this.dragon = OpenSeadragon({
                         id: 'feature-detail-dragon-pane',
                         prefixUrl: 'js/openseadragon/images/',
-                        tileSources: `${pane.dataset.uri}/info.json`
+                        tileSources: `${pane.dataset.uri}/info.json`,
                     })
 
                     this.dragon.addHandler('open', () => {
@@ -150,16 +157,27 @@ class Detailer {
                     this.parentEl.scrollIntoView({behavior: 'smooth', block: 'start'})
                 } else {
                     metaPane.classList.add('visible')
-                    metaPane.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    setTimeout(() => pane.scrollIntoView({ behavior: 'smooth', block: 'start' }), 500)
+                    getEl(`feature-overlay-${pane.dataset.id}`).classList.add('showcased')
 
-                    let region = new OpenSeadragon.Rect(
-                        parseInt(pane.dataset.x),
-                        parseInt(pane.dataset.y),
-                        parseInt(pane.dataset.width),
-                        parseInt(pane.dataset.height)
-                    )
-                    let viewPortRect = mv.dragon.viewport.imageToViewportRectangle(region)
-                    mv.dragon.viewport.fitBounds(viewPortRect)
+                    let x = parseInt(pane.dataset.x)
+                    let y = parseInt(pane.dataset.y)
+                    let width = parseInt(pane.dataset.width)
+                    let height = parseInt(pane.dataset.height)
+
+                    let padding = 20
+                    let region = new OpenSeadragon.Rect(x, y, width, height)
+                    let viewportRect = mv.dragon.viewport.imageToViewportRectangle(region)
+                    let containerWidth = mv.dragon.container.clientWidth
+                    let viewportWidth = mv.dragon.viewport.getBounds().width
+                    let paddingInViewport = (padding / containerWidth) * viewportWidth
+
+                    mv.dragon.viewport.fitBoundsWithConstraints(new OpenSeadragon.Rect(
+                        viewportRect.x - paddingInViewport,
+                        viewportRect.y - paddingInViewport,
+                        viewportRect.width + (paddingInViewport * 2),
+                        viewportRect.height + (paddingInViewport * 2)
+                    ))
                 }
             }
         })
