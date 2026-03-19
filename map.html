@@ -15,10 +15,17 @@
         <line x1="4" y1="4" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         <line x1="12" y1="4" x2="4" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
     </symbol>
+    <symbol id="icon-share" viewBox="0 0 35.74 35.74">
+        <circle cx="17.87" cy="17.87" r="17.87" fill="#292419"/>
+        <g>
+            <path d="M25.6,14.01c-.43,0-.77.35-.77.77v10.05h-13.91v-10.05c0-.43-.35-.77-.77-.77s-.77.35-.77.77v10.82c0,.43.35.77.77.77h15.46c.43,0,.77-.35.77-.77v-10.82c0-.43-.35-.77-.77-.77Z" fill="#eeeee6" stroke="#eeeee6" stroke-miterlimit="10" stroke-width=".5px"/>
+            <path d="M15.32,13.78l1.77-1.77v8.18c0,.43.35.77.77.77s.77-.35.77-.77v-8.18l1.77,1.77c.15.15.35.23.55.23s.4-.08.55-.23c.3-.3.3-.79,0-1.09l-3.09-3.09c-.3-.3-.79-.3-1.09,0l-3.09,3.09c-.3.3-.3.79,0,1.09.3.3.79.3,1.09,0h0Z" fill="#eeeee6" stroke="#eeeee6" stroke-miterlimit="10" stroke-width=".5px"/>
+        </g>
+    </symbol>
 </svg>
 
 <header class="internal">
-    <h1>Mapping Victory</h1>
+    <a href="index.html" class="logo"><h1>Mapping Victory</h1></a>
     <div class="header-links">
         <a href="/">About</a>
         <a href="/">Gallery</a>
@@ -160,9 +167,6 @@
                         // FEATURES
                         makeFeatures(metaDiv)
                     })
-                    mv.dragon.addHandler('animation-finish', () => {
-                        console.log('home')
-                    })
                 }
             })
         }
@@ -172,11 +176,11 @@
         let features = mv.corpus.getAssociatedContents('Map', mv.mapID, 'Feature')
         if (features.length) {
             appendToEl(metaDiv, `
-            <div class="feature-detail-metadatum values-below">
-                <div class="feature-detail-metadatum-field white-bg">Features</div>
-                <div id="feature-div" class="feature-detail-metadatum-value white-bg"></div>
-            </div>
-        `)
+                <div class="feature-detail-metadatum values-below">
+                    <div class="feature-detail-metadatum-field white-bg">Features</div>
+                    <div id="feature-div" class="feature-detail-metadatum-value white-bg"></div>
+                </div>
+            `)
             let featureDiv = getEl('feature-div')
             let dragon = window.mv.dragon
             let colorClasses = ['yellow', 'red', 'blue']
@@ -189,17 +193,17 @@
                 if (d.width > 0) {
                     // create feature link
                     appendToEl(featureDiv, `
-                <a href="#" id="feature-link-${feature.id}" class="feature-link clickable-feature"
-                    data-id="${feature.id}"
-                    data-uri="${d.uri}"
-                    data-x="${d.x}"
-                    data-y="${d.y}"
-                    data-width="${d.width}"
-                    data-height="${d.height}">
-                        ${feature.label}
-                </a>
-                <div id="feature-metadata-pane-${feature.id}" class="feature-metadata-pane"></div>
-            `)
+                        <a href="#" id="feature-link-${feature.id}" class="feature-link clickable-feature"
+                            data-id="${feature.id}"
+                            data-uri="${d.uri}"
+                            data-x="${d.x}"
+                            data-y="${d.y}"
+                            data-width="${d.width}"
+                            data-height="${d.height}">
+                                ${feature.label}
+                        </a>
+                        <div id="feature-metadata-pane-${feature.id}" class="feature-metadata-pane"></div>
+                    `)
 
                     // create overlay
                     let imageRect = new OpenSeadragon.Rect(
@@ -259,6 +263,16 @@
                     }
                 })
             })
+
+            // HANDLE A FEATURE ID BEING PASSED IN AS GET PARAM
+            if (mv.urlParams.has('feature-id')) {
+                console.log('hello?')
+                let featureID = mv.urlParams.get('feature-id')
+                let featureLink = getEl(`feature-link-${featureID}`)
+                let featureMetaDiv = getEl(`feature-metadata-pane-${featureID}`)
+                console.log(featureMetaDiv)
+                window.mv.detailer.showFeatureDetails(featureLink, featureMetaDiv)
+            }
         }
     }
 

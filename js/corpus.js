@@ -108,13 +108,9 @@ class Corpus {
                 })
             }
         })
-        console.log('xrefs wired')
 
         // wire up indirect connections
-        this.indirectConnections.forEach(connectionPath => {
-            this.registerIndirectConnections(connectionPath)
-        })
-        console.log('indirects registered')
+        this.registerIndirectConnections()
 
         callback()
     }

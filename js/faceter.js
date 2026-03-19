@@ -37,19 +37,9 @@ class Faceter {
                 clearTimeout(this.searchTimer)
                 this.searchTimer = setTimeout(() => {
                     if (this.searchBox.value) {
-                        this.search = this.searchBox.value
-                        this.searchTargetIDs.clear()
-
-                        callAPI(`${this.mv.api}/${this.targetCT}`, {q: this.search, only: 'id'}, searchResults => {
-                            if (searchResults.records) {
-                                searchResults.records.forEach(hit => {
-                                    this.searchTargetIDs.add(hit.id)
-                                })
-                                this.filterGallery()
-                            }
-                        })
+                        this.performSearch(this.searchBox.value)
                     } else this.search = null
-                }, 1500)
+                }, e.key === 'Enter' ? 1 : 1500)
             })
             this.searchBox.addEventListener('focusin', (e) => this.searchBox.setAttribute('placeholder', ''))
             this.searchBox.addEventListener('focusout', (e) => this.searchBox.setAttribute('placeholder', 'Search'))
@@ -87,6 +77,33 @@ class Faceter {
         }
     }
 
+    performSearch(query) {
+        this.search = query
+        this.searchTargetIDs.clear()
+
+        callAPI(`${this.mv.api}/${this.targetCT}/`, {q: this.search, only: 'id'}, searchResults => {
+            if (searchResults.records) {
+                searchResults.records.forEach(hit => {
+                    this.searchTargetIDs.add(hit.id)
+                })
+
+                // if this is a search on the Maps gallery,
+                // let's also search features just in case
+                if (this.targetCT === 'Map') {
+                    callAPI(`${this.mv.api}/Feature/`, {q: this.search, only: 'map.id'}, searchResults => {
+                        if (searchResults.records) {
+                            searchResults.records.forEach(hit => {
+                                this.searchTargetIDs.add(hit.map.id)
+                            })
+                        }
+                        this.filterGallery()
+                    })
+                }
+                else this.filterGallery()
+            }
+        })
+    }
+
     buildFacetList(contentType, label) {
         let frequencyMap = {}
         let facetContents = this.mv.corpus.getContents(contentType)
@@ -114,7 +131,8 @@ class Faceter {
             appendToEl(facetListContent, `
                 <a href="#" id="facet-link-${contentType}-${facetID}" class="facet-link"
                     data-facet-type="${contentType}"
-                    data-facet-id="${facetID}">    
+                    data-facet-id="${facetID}"
+                    data-facet-label="${facet.label}">    
                     ${facet.label} <span id="facet-link-${contentType}-${facetID}-counter" class="count-badge"></span>
                 </a>
             `)
@@ -206,7 +224,7 @@ class Faceter {
     }
 
     filterGallery() {
-        let galleryDiv = getEl('gallery-div')
+        let galleryDiv = getEl('galleries')
 
         clearEl(galleryDiv)
         mv.galleryIDs.clear()
@@ -308,6 +326,7 @@ class Faceter {
         }
 
         if (this.search !== null) {
+            hasFilters = true
             targetIDSets.push(this.searchTargetIDs)
 
             if (makeIndicators) {
@@ -324,7 +343,10 @@ class Faceter {
         }
 
         if (makeIndicators) {
-            if (hasFilters) showEl(filterIndicatorDiv)
+            if (hasFilters) {
+                this.createShareButton(filterIndicatorDiv)
+                showEl(filterIndicatorDiv)
+            }
             else hideEl(filterIndicatorDiv)
         }
 
@@ -332,12 +354,34 @@ class Faceter {
     }
 
     findIntersectingTargetIDs(targetIDSets) {
-        console.log(targetIDSets)
         const [first, ...rest] = targetIDSets
         return new Set([...first].filter(id => rest.every(set => set.has(id))))
     }
 
-    buildFilterLink(facet=null, value=null, changeURL=false) {
+    createShareButton(parent, url=null, icon='icon-share') {
+        if (url === null) url = this.buildFilterLink(null, null, false, window.location.origin)
+
+        appendToEl(parent, `
+            <button class="filter-share-button"
+                aria-label="Copy share link"
+                data-link="${url}"
+                data-tippy-content="Copy share link">
+                <svg width="30" height="30"><use href="#${icon}"/></svg>
+            </button>
+        `)
+        tippy('.filter-share-button')
+        forElsMatching('.filter-share-button', button => {
+            button.addEventListener('click', async function(e) {
+                let shareButton = e.target.closest('.filter-share-button')
+                await navigator.clipboard.writeText(shareButton.dataset.link)
+                let toolTip = tippy(shareButton)
+                toolTip.setContent('Share link copied!')
+                toolTip.show()
+            })
+        })
+    }
+
+    buildFilterLink(facet=null, value=null, changeURL=false, targetPage='') {
         let linkParams = []
         let paramAdded = false
 
@@ -353,12 +397,37 @@ class Faceter {
         }
         if (!paramAdded && facet !== null) linkParams.push(`${facet}=${value}`)
 
+        if (this.search) linkParams.push(`search=${encodeURIComponent(this.search)}`)
+
         if (changeURL) {
             let url = new URL(window.location.href)
             url.search = `?${linkParams.join('&')}`
             window.history.pushState({}, '', url)
         }
 
-        return `?${linkParams.join('&')}`
+        return `${targetPage}?${linkParams.join('&')}`
+    }
+
+    handlePageLoad(showDefaultGalleries) {
+        // now that all facets are built, let's check to see if any GET params
+        // were passed in, indicating that we want to filter our gallery immediately
+        // on load
+        let filteredOnLoad = false
+        let filtersAvailableOnLoad = ['Tag', 'Event', 'Place', 'Unit']
+        filtersAvailableOnLoad.forEach(filterAvailableOnLoad => {
+            if (this.mv.urlParams.has(filterAvailableOnLoad)) {
+                let filterValues = this.mv.urlParams.get(filterAvailableOnLoad).split(',')
+                filterValues.forEach(val => this.applyFacet(filterAvailableOnLoad, val, false))
+                filteredOnLoad = true
+            }
+        })
+        // check for search keywords specifically which will automatically filter the gallery
+        if (this.mv.urlParams.has('search')) {
+            this.performSearch(this.mv.urlParams.get('search'))
+            // or manually filter gallery if other GET params were present
+        } else if (filteredOnLoad) {
+            this.filterGallery()
+            // or just load the default galleries
+        } else this.mv.showDefaultGalleries()
     }
 }

@@ -15,6 +15,20 @@
             <line x1="4" y1="4" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             <line x1="12" y1="4" x2="4" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </symbol>
+        <symbol id="icon-share" viewBox="0 0 35.74 35.74">
+            <circle cx="17.87" cy="17.87" r="17.87" fill="#292419"/>
+            <g>
+                <path d="M25.6,14.01c-.43,0-.77.35-.77.77v10.05h-13.91v-10.05c0-.43-.35-.77-.77-.77s-.77.35-.77.77v10.82c0,.43.35.77.77.77h15.46c.43,0,.77-.35.77-.77v-10.82c0-.43-.35-.77-.77-.77Z" fill="#eeeee6" stroke="#eeeee6" stroke-miterlimit="10" stroke-width=".5px"/>
+                <path d="M15.32,13.78l1.77-1.77v8.18c0,.43.35.77.77.77s.77-.35.77-.77v-8.18l1.77,1.77c.15.15.35.23.55.23s.4-.08.55-.23c.3-.3.3-.79,0-1.09l-3.09-3.09c-.3-.3-.79-.3-1.09,0l-3.09,3.09c-.3.3-.3.79,0,1.09.3.3.79.3,1.09,0h0Z" fill="#eeeee6" stroke="#eeeee6" stroke-miterlimit="10" stroke-width=".5px"/>
+            </g>
+        </symbol>
+        <symbol id="icon-share-white" viewBox="0 0 35.74 35.74">
+            <circle cx="17.87" cy="17.87" r="17.87" fill="#eeeee6"/>
+            <g>
+                <path d="M25.6,14.01c-.43,0-.77.35-.77.77v10.05h-13.91v-10.05c0-.43-.35-.77-.77-.77s-.77.35-.77.77v10.82c0,.43.35.77.77.77h15.46c.43,0,.77-.35.77-.77v-10.82c0-.43-.35-.77-.77-.77Z" fill="#292419" stroke="#292419" stroke-miterlimit="10" stroke-width=".5px"/>
+                <path d="M15.32,13.78l1.77-1.77v8.18c0,.43.35.77.77.77s.77-.35.77-.77v-8.18l1.77,1.77c.15.15.35.23.55.23s.4-.08.55-.23c.3-.3.3-.79,0-1.09l-3.09-3.09c-.3-.3-.79-.3-1.09,0l-3.09,3.09c-.3.3-.3.79,0,1.09.3.3.79.3,1.09,0h0Z" fill="#292419" stroke="#292419" stroke-miterlimit="10" stroke-width=".5px"/>
+            </g>
+        </symbol>
     </svg>
 
     <header>
@@ -35,9 +49,11 @@
     <main class="filter-and-gallery-container">
         <div id="filter-div">
             <input type="text" id="gallery-search-box" placeholder="Search">
-            <div id="filter-indicator-div" class="hidden"></div>
         </div>
-        <div id="gallery-div"></div>
+        <div id="gallery-div">
+            <div id="filter-indicator-div" class="hidden"></div>
+            <div id="galleries"></div>
+        </div>
     </main>
     <footer>
 
@@ -46,6 +62,8 @@
     <script src="js/openseadragon/openseadragon.min.js"></script>
     <script src="js/leaflet/leaflet.js"></script>
     <script src="js/markercluster/leaflet.markercluster.js"></script>
+    <script src="js/popper.min.js"></script>
+    <script src="js/tippy-bundle.umd.min.js"></script>
     <script src="js/utilities.js"></script>
     <script src="js/corpus.js"></script>
     <script src="js/faceter.js"></script>
@@ -74,44 +92,26 @@
                 mv.detailer = new Detailer('#gallery-div')
                 mv.mapper = new Mapper()
 
-                // FEATURE GALLERIES
-                mv.showDefaultGalleries = () => {
-                    let galleryDiv = getEl('gallery-div')
-                    clearEl(galleryDiv)
-                    let g = new Gallery(galleryDiv, 'Map', 'Featured', false)
-                }
-
                 // set total counts
                 getEl('total-features-counter').innerHTML = mv.corpus.meta['Feature'].ids.length.toLocaleString()
                 getEl('total-maps-counter').innerHTML = mv.corpus.meta['Map'].ids.length.toLocaleString()
 
-                // TAGS
+                // build facet lists
                 mv.faceter.buildFacetList('Tag', 'Tags')
-
-                // EVENTS
                 mv.faceter.buildFacetList('Event', 'Events')
-
-                // UNITS
                 mv.faceter.buildFacetList('Unit', 'Units')
-
-                // PLACES
                 mv.faceter.buildFacetList('Region', 'Places')
 
-                // now that all facets are built, let's check to see if any GET params
-                // were passed in, indicating that we want to filter our gallery immediately
-                // on load
-                let filteredOnLoad = false
-                let filtersAvailableOnLoad = ['Tag', 'Event', 'Place', 'Unit']
-                filtersAvailableOnLoad.forEach(filterAvailableOnLoad => {
-                    if (mv.urlParams.has(filterAvailableOnLoad)) {
-                        let filterValues = mv.urlParams.get(filterAvailableOnLoad).split(',')
-                        filterValues.forEach(val => window.mv.faceter.applyFacet(filterAvailableOnLoad, val, false))
-                        filteredOnLoad = true
-                    }
-                })
+                // determine default behavior for page load
+                mv.showDefaultGalleries = () => {
+                    let galleryDiv = getEl('galleries')
+                    clearEl(galleryDiv)
+                    new Gallery(galleryDiv, 'Map', 'Featured', false)
+                }
 
-                if (filteredOnLoad) mv.faceter.filterGallery()
-                else mv.showDefaultGalleries()
+                // respond to page load based on any GET params
+                // or perform default behavior
+                mv.faceter.handlePageLoad()
 
                 // rig up gallery pane click event
                 document.addEventListener('click', (e) => {

@@ -16,13 +16,12 @@ class Gallery {
         }
         this.borderClass = this.borderClasses[this.galleryID % this.borderClasses.length]
         appendToEl(parent, `
-            <div id="gallery-${this.galleryID}" class="gallery ${this.borderClass}">
-                <div class="gallery-header">${this.label} <span id="gallery-${this.galleryID}-count-badge" class="count-badge"></span></div>
-                <div class="gallery-container${ heightRestricted ? ' height-restricted' : '' }">
-                    <div id="gallery-${this.galleryID}-content" class="gallery-content"></div>
-                </div>
+            <div id="gallery-${this.galleryID}" class="gallery ${this.borderClass}${ heightRestricted ? ' height-restricted' : '' }">
+                <div id="gallery-${this.galleryID}-header" class="gallery-header">${this.label} <span id="gallery-${this.galleryID}-count-badge" class="count-badge"></span></div>
+                <div id="gallery-${this.galleryID}-content" class="gallery-content"></div>
             </div>
         `)
+
         this.element = getEl(`gallery-${this.galleryID}`)
         this.galleryContentDiv = getEl(`gallery-${this.galleryID}-content`)
 
