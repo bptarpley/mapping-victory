@@ -359,7 +359,7 @@ class Faceter {
     }
 
     createShareButton(parent, url=null, icon='icon-share') {
-        if (url === null) url = this.buildFilterLink(null, null, false, window.location.origin)
+        if (url === null) url = this.buildFilterLink(null, null, false)
 
         appendToEl(parent, `
             <button class="filter-share-button"
@@ -405,7 +405,10 @@ class Faceter {
             window.history.pushState({}, '', url)
         }
 
-        return `${targetPage}?${linkParams.join('&')}`
+        let fullURL = new URL(targetPage, window.location.href)
+        fullURL.search = ''
+
+        return `${fullURL.href}?${linkParams.join('&')}`
     }
 
     handlePageLoad(showDefaultGalleries) {

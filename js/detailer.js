@@ -137,9 +137,11 @@ class Detailer {
             `)
 
             if (metadataPane === null) {
+                let fullURL = new URL('map.html', window.location.href)
+                fullURL.search = ''
                 this.mv.faceter.createShareButton(
                     getEl('feature-detail-title'),
-                    `${window.location.origin}/map.html?map-id=${feature.map.id}&feature-id=${feature.id}`,
+                    `${fullURL.href}?map-id=${feature.map.id}&feature-id=${feature.id}`,
                     'icon-share-white'
                 )
 
