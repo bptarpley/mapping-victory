@@ -8,25 +8,52 @@
     <link rel="stylesheet" href="js/markercluster/MarkerCluster.css">
     <link type="text/css" rel="stylesheet" href="css/mapping_victory.css">
 </head>
-<body>
+<body class="gallery-page">
     <!-- SVG Graphics -->
     <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
         <symbol id="icon-close" viewBox="0 0 16 16">
             <line x1="4" y1="4" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             <line x1="12" y1="4" x2="4" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </symbol>
+        <symbol id="icon-share" viewBox="0 0 35.74 35.74">
+            <circle cx="17.87" cy="17.87" r="17.87" fill="#292419"/>
+            <g>
+                <path d="M25.6,14.01c-.43,0-.77.35-.77.77v10.05h-13.91v-10.05c0-.43-.35-.77-.77-.77s-.77.35-.77.77v10.82c0,.43.35.77.77.77h15.46c.43,0,.77-.35.77-.77v-10.82c0-.43-.35-.77-.77-.77Z" fill="#eeeee6" stroke="#eeeee6" stroke-miterlimit="10" stroke-width=".5px"/>
+                <path d="M15.32,13.78l1.77-1.77v8.18c0,.43.35.77.77.77s.77-.35.77-.77v-8.18l1.77,1.77c.15.15.35.23.55.23s.4-.08.55-.23c.3-.3.3-.79,0-1.09l-3.09-3.09c-.3-.3-.79-.3-1.09,0l-3.09,3.09c-.3.3-.3.79,0,1.09.3.3.79.3,1.09,0h0Z" fill="#eeeee6" stroke="#eeeee6" stroke-miterlimit="10" stroke-width=".5px"/>
+            </g>
+        </symbol>
+        <symbol id="icon-share-white" viewBox="0 0 35.74 35.74">
+            <circle cx="17.87" cy="17.87" r="17.87" fill="#eeeee6"/>
+            <g>
+                <path d="M25.6,14.01c-.43,0-.77.35-.77.77v10.05h-13.91v-10.05c0-.43-.35-.77-.77-.77s-.77.35-.77.77v10.82c0,.43.35.77.77.77h15.46c.43,0,.77-.35.77-.77v-10.82c0-.43-.35-.77-.77-.77Z" fill="#292419" stroke="#292419" stroke-miterlimit="10" stroke-width=".5px"/>
+                <path d="M15.32,13.78l1.77-1.77v8.18c0,.43.35.77.77.77s.77-.35.77-.77v-8.18l1.77,1.77c.15.15.35.23.55.23s.4-.08.55-.23c.3-.3.3-.79,0-1.09l-3.09-3.09c-.3-.3-.79-.3-1.09,0l-3.09,3.09c-.3.3-.3.79,0,1.09.3.3.79.3,1.09,0h0Z" fill="#292419" stroke="#292419" stroke-miterlimit="10" stroke-width=".5px"/>
+            </g>
+        </symbol>
     </svg>
 
     <header>
+        <div class="header-links">
+            <a href="/">About</a>
+            <a href="/">Gallery</a>
+            <a href="/">Essays</a>
+        </div>
         <h1>Mapping Victory</h1>
         <h2>U.S. Army Souvenir Maps from the European Theater of Operations, 1944-46</h2>
+        <div class="toggle-switch-container">
+            <span class="toggle-switch">
+                <a href="index.html" class="active left">Features <span id="total-features-counter" class="count-badge">100</span></a>
+                <a href="maps.html">Maps <span id="total-maps-counter" class="count-badge">100</span></a>
+            </span>
+        </div>
     </header>
     <main class="filter-and-gallery-container">
         <div id="filter-div">
             <input type="text" id="gallery-search-box" placeholder="Search">
-            <div id="filter-indicator-div" class="hidden"></div>
         </div>
-        <div id="gallery-div"></div>
+        <div id="gallery-div">
+            <div id="filter-indicator-div" class="hidden"></div>
+            <div id="galleries"></div>
+        </div>
     </main>
     <footer>
 
@@ -35,6 +62,8 @@
     <script src="js/openseadragon/openseadragon.min.js"></script>
     <script src="js/leaflet/leaflet.js"></script>
     <script src="js/markercluster/leaflet.markercluster.js"></script>
+    <script src="js/popper.min.js"></script>
+    <script src="js/tippy-bundle.umd.min.js"></script>
     <script src="js/utilities.js"></script>
     <script src="js/corpus.js"></script>
     <script src="js/faceter.js"></script>
@@ -60,80 +89,52 @@
             mv.corpus = new Corpus()
             mv.corpus.build(() => {
                 let filterDiv = getEl('filter-div')
-                mv.faceter = new Faceter(filterDiv)
-                mv.detailer = new Detailer('#gallery-div')
+                mv.faceter = new Faceter(filterDiv, 'Feature')
+                mv.detailer = new Detailer('#galleries')
                 mv.mapper = new Mapper()
 
-                // FEATURE GALLERIES
+                // set total map and feature counts
+                getEl('total-maps-counter').innerHTML = mv.corpus.meta.Map.ids.length.toLocaleString()
+                getEl('total-features-counter').innerHTML = mv.corpus.meta.Feature.ids.length.toLocaleString()
+
+                // build facet lists
+                mv.faceter.buildFacetList('Tag', 'Tags')
+                mv.faceter.buildFacetList('Event', 'Events')
+                mv.faceter.buildFacetList('Unit', 'Units')
+                mv.faceter.buildFacetList('Region', 'Places')
+
+                // define default behavior for page load
                 mv.showDefaultGalleries = () => {
-                    let galleryDiv = getEl('gallery-div')
+                    let galleryDiv = getEl('galleries')
                     clearEl(galleryDiv)
-                    let g = new Gallery(galleryDiv, 'Feature', 'Featured', true, {f_featured: true})
+                    let featuredFeatureIDs = new Set()
+                    let allFeatures = mv.corpus.getContents('Feature')
+                    allFeatures.forEach(feature => {
+                        if (feature.featured) featuredFeatureIDs.add(feature.id)
+                    })
+
+                    new Gallery(galleryDiv, 'Feature', 'Featured', true, featuredFeatureIDs)
+
+                    let tagLinks = getElsWithQuery(".facet-link[data-facet-type='Tag']")
+                    for (let tagNum = 0; tagNum < tagLinks.length && tagNum < 3; tagNum++) {
+                        let tagLink = tagLinks[tagNum]
+                        let tagFeatureIDs = new Set()
+                        let tagFeatures = mv.corpus.getAssociatedContents('Tag', tagLink.dataset.facetId, 'Feature')
+                        tagFeatures.forEach(feature => tagFeatureIDs.add(feature.id))
+                        new Gallery(galleryDiv, 'Feature', tagLink.dataset.facetLabel, true, tagFeatureIDs)
+                    }
                 }
 
-                // TAGS
-                callAPI(`${mv.api}/Feature/`, {'page-size': 0, 'a_terms_tags': 'tags.id'}, (tagInfo) => {
-                    mv.faceter.buildFacetList('Tag', 'Tags', tagInfo.meta.aggregations.tags)
+                // respond to page load based on any GET params
+                // or perform default behavior
+                mv.faceter.handlePageLoad()
 
-                    // EVENTS
-                    callAPI(`${mv.api}/Feature/`, {'page-size': 0, 'a_terms_events': 'events.id'}, (eventInfo) => {
-                        mv.faceter.buildFacetList('Event', 'Events', eventInfo.meta.aggregations.events)
-
-                        // UNITS
-                        callAPI(`${mv.api}/Feature/`, {'page-size': 0, 'a_terms_maps': 'map.id'}, (mapInfo) => {
-                            let mapCounts = mapInfo.meta.aggregations.maps
-                            let unitCounts = {}
-
-                            for (let mapID in mapCounts) {
-                                let units = mv.corpus.getAssociatedContents('Map', mapID, 'Unit')
-                                if (units.length) {
-                                    let unit = units[0]
-                                    if (!(unit.id in unitCounts)) unitCounts[unit.id] = 0
-                                    unitCounts[unit.id] += mapCounts[mapID]
-                                }
-                            }
-                            mv.faceter.buildFacetList('Unit', 'Units', unitCounts)
-
-                            // PLACES
-                            callAPI(`${mv.api}/Feature/`, {'page-size': 0, 'a_terms_locations': 'locations.id'}, (locInfo) => {
-                                let locationCounts = locInfo.meta.aggregations.locations
-                                let regionCounts = {}
-
-                                Object.keys(locationCounts).forEach(locID => {
-                                    let regions = mv.corpus.getAssociatedContents('Place', locID, 'Region')
-                                    regions.forEach(region => {
-                                        if (!(region.id in regionCounts)) regionCounts[region.id] = 0
-                                        regionCounts[region.id] += locationCounts[locID]
-                                    })
-                                })
-                                mv.faceter.buildFacetList('Region', 'Places', regionCounts)
-
-                                // now that all facets are built, let's check to see if any GET params
-                                // were passed in, indicating that we want to filter our gallery immediately
-                                // on load
-                                let filteredOnLoad = false
-                                let filtersAvailableOnLoad = ['Tag', 'Event', 'Place', 'Unit']
-                                filtersAvailableOnLoad.forEach(filterAvailableOnLoad => {
-                                    if (mv.urlParams.has(filterAvailableOnLoad)) {
-                                        let filterValues = mv.urlParams.get(filterAvailableOnLoad).split(',')
-                                        filterValues.forEach(val => window.mv.faceter.applyFacet(filterAvailableOnLoad, val, false))
-                                        filteredOnLoad = true
-                                    }
-                                })
-
-                                if (filteredOnLoad) mv.faceter.filterGallery()
-                                else mv.showDefaultGalleries()
-
-                                // rig up gallery pane click event
-                                document.addEventListener('click', (e) => {
-                                    let pane = e.target.closest('.gallery-pane')
-                                    if (pane) {
-                                        window.mv.detailer.showFeatureDetails(pane)
-                                    }
-                                })
-                            })
-                        })
-                    })
+                // rig up gallery pane click event
+                document.addEventListener('click', (e) => {
+                    let pane = e.target.closest('.gallery-pane')
+                    if (pane) {
+                        window.mv.detailer.showFeatureDetails(pane)
+                    }
                 })
             })
         })

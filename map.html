@@ -15,10 +15,17 @@
         <line x1="4" y1="4" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         <line x1="12" y1="4" x2="4" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
     </symbol>
+    <symbol id="icon-share" viewBox="0 0 35.74 35.74">
+        <circle cx="17.87" cy="17.87" r="17.87" fill="#292419"/>
+        <g>
+            <path d="M25.6,14.01c-.43,0-.77.35-.77.77v10.05h-13.91v-10.05c0-.43-.35-.77-.77-.77s-.77.35-.77.77v10.82c0,.43.35.77.77.77h15.46c.43,0,.77-.35.77-.77v-10.82c0-.43-.35-.77-.77-.77Z" fill="#eeeee6" stroke="#eeeee6" stroke-miterlimit="10" stroke-width=".5px"/>
+            <path d="M15.32,13.78l1.77-1.77v8.18c0,.43.35.77.77.77s.77-.35.77-.77v-8.18l1.77,1.77c.15.15.35.23.55.23s.4-.08.55-.23c.3-.3.3-.79,0-1.09l-3.09-3.09c-.3-.3-.79-.3-1.09,0l-3.09,3.09c-.3.3-.3.79,0,1.09.3.3.79.3,1.09,0h0Z" fill="#eeeee6" stroke="#eeeee6" stroke-miterlimit="10" stroke-width=".5px"/>
+        </g>
+    </symbol>
 </svg>
 
 <header class="internal">
-    <h1>Mapping Victory</h1>
+    <a href="index.html" class="logo"><h1>Mapping Victory</h1></a>
     <div class="header-links">
         <a href="/">About</a>
         <a href="/">Gallery</a>
@@ -71,126 +78,121 @@
             mv.corpus = new Corpus()
 
             mv.corpus.build(() => {
-                callAPI(`${mv['api']}/Map/`, {f_id: mv.mapID}, (mapInfo) => {
-                    if (mapInfo.records && mapInfo.records?.length === 1) {
-                        let map = mapInfo.records[0]
-                        let metaDiv = getEl('metadata-div')
-                        mv.detailer = new Detailer('#map-div')
-                        mv.faceter = new Faceter(null)
+                let map = mv.corpus.getContent('Map', mv.mapID)
+                if (map) {
+                    let metaDiv = getEl('metadata-div')
+                    mv.detailer = new Detailer('#map-div')
+                    mv.faceter = new Faceter(null)
 
-                        // title
-                        getEl('map-title').innerHTML = map.title
+                    // title
+                    getEl('map-title').innerHTML = map.title
 
-                        // description
-                        if (map.description) {
-                            appendToEl(metaDiv, `
-                                <div class="feature-detail-metadatum">
-                                    <div class="feature-detail-metadatum-field">Description</div>
-                                    <div class="feature-detail-metadatum-value white-bg">${map.description}</div>
-                                </div>
-                            `)
-                        }
-
-                        // unit
-                        if (map.military_unit) {
-                            appendToEl(metaDiv, `
-                                <div class="feature-detail-metadatum">
-                                    <div class="feature-detail-metadatum-field">Unit</div>
-                                    <div class="feature-detail-metadatum-value white-bg">${map.military_unit.label}</div>
-                                </div>
-                            `)
-                        }
-
-                        // date
-                        if (map.date?.start) {
-                            appendToEl(metaDiv, `
-                                <div class="feature-detail-metadatum">
-                                    <div class="feature-detail-metadatum-field">Date</div>
-                                    <div class="feature-detail-metadatum-value white-bg">${parseDate(map.date.start)}</div>
-                                </div>
-                            `)
-                        }
-
-                        // artists
-                        if (map.artists && map.artists?.length) {
-                            let people = []
-                            map.artists.forEach(person => {
-                                people.push(`<a href="/">${person.label}</a>`)
-                            })
-                            appendToEl(metaDiv, `
-                                <div class="feature-detail-metadatum">
-                                    <div class="feature-detail-metadatum-field">Artists</div>
-                                    <div class="feature-detail-metadatum-value white-bg">${people.join('\n')}</div>
-                                </div>
-                            `)
-                        }
-
-                        // printers
-                        if (map.printers && map.printers?.length) {
-                            let people = []
-                            map.printers.forEach(person => {
-                                people.push(`<a href="/">${person.label}</a>`)
-                            })
-                            appendToEl(metaDiv, `
-                                <div class="feature-detail-metadatum">
-                                    <div class="feature-detail-metadatum-field">Printers</div>
-                                    <div class="feature-detail-metadatum-value white-bg">${people.join('\n')}</div>
-                                </div>
-                            `)
-                        }
-
-                        // MAP IMAGE
-                        mv.dragon = OpenSeadragon({
-                            id: 'dragon-div',
-                            prefixUrl: 'js/openseadragon/images/',
-                            tileSources: `${map.iiif_url}/info.json`
-                        })
-                        mv.dragon.addHandler('open', () => {
-                            const tiledImage = mv.dragon.world.getItemAt(0)
-                            const imageBounds = tiledImage.getBounds()
-
-                            // Get the viewport height in image coordinates
-                            const viewportHeight = mv.dragon.viewport.getBoundsNoRotate().height
-
-                            // Center X on the image, set Y so image top aligns with viewport top
-                            const centerX = imageBounds.x + imageBounds.width / 2
-                            const centerY = imageBounds.y + viewportHeight / 2
-
-                            mv.dragon.viewport.panTo(new OpenSeadragon.Point(centerX, centerY), true)
-
-                            // FEATURES
-                            makeFeatures(metaDiv)
-                        })
+                    // description
+                    if (map.description) {
+                        appendToEl(metaDiv, `
+                            <div class="feature-detail-metadatum">
+                                <div class="feature-detail-metadatum-field white-bg">Description</div>
+                                <div class="feature-detail-metadatum-value white-bg">${map.description}</div>
+                            </div>
+                        `)
                     }
-                })
+
+                    // unit
+                    if (map.military_unit) {
+                        appendToEl(metaDiv, `
+                            <div class="feature-detail-metadatum">
+                                <div class="feature-detail-metadatum-field white-bg">Unit</div>
+                                <div class="feature-detail-metadatum-value white-bg">${map.military_unit.label}</div>
+                            </div>
+                        `)
+                    }
+
+                    // date
+                    if (map.date?.start) {
+                        appendToEl(metaDiv, `
+                            <div class="feature-detail-metadatum">
+                                <div class="feature-detail-metadatum-field white-bg">Date</div>
+                                <div class="feature-detail-metadatum-value white-bg">${parseDate(map.date.start)}</div>
+                            </div>
+                        `)
+                    }
+
+                    // artists
+                    if (map.artists && map.artists?.length) {
+                        let people = []
+                        map.artists.forEach(person => {
+                            people.push(`<a href="/">${person.label}</a>`)
+                        })
+                        appendToEl(metaDiv, `
+                            <div class="feature-detail-metadatum">
+                                <div class="feature-detail-metadatum-field white-bg">Artists</div>
+                                <div class="feature-detail-metadatum-value white-bg">${people.join('\n')}</div>
+                            </div>
+                        `)
+                    }
+
+                    // printers
+                    if (map.printers && map.printers?.length) {
+                        let people = []
+                        map.printers.forEach(person => {
+                            people.push(`<a href="/">${person.label}</a>`)
+                        })
+                        appendToEl(metaDiv, `
+                            <div class="feature-detail-metadatum">
+                                <div class="feature-detail-metadatum-field white-bg">Printers</div>
+                                <div class="feature-detail-metadatum-value white-bg">${people.join('\n')}</div>
+                            </div>
+                        `)
+                    }
+
+                    // MAP IMAGE
+                    mv.dragon = OpenSeadragon({
+                        id: 'dragon-div',
+                        prefixUrl: 'js/openseadragon/images/',
+                        tileSources: `${map.iiif_url}/info.json`,
+                    })
+                    mv.dragon.addHandler('open', () => {
+                        const tiledImage = mv.dragon.world.getItemAt(0)
+                        const imageBounds = tiledImage.getBounds()
+
+                        // Get the viewport height in image coordinates
+                        const viewportHeight = mv.dragon.viewport.getBoundsNoRotate().height
+
+                        // Center X on the image, set Y so image top aligns with viewport top
+                        const centerX = imageBounds.x + imageBounds.width / 2
+                        const centerY = imageBounds.y + viewportHeight / 2
+
+                        mv.dragon.viewport.panTo(new OpenSeadragon.Point(centerX, centerY), true)
+
+                        // FEATURES
+                        makeFeatures(metaDiv)
+                    })
+                }
             })
         }
     })
 
     function makeFeatures(metaDiv) {
-        console.log(callAPI)
-        callAPI(`${mv['api']}/Feature/`, {'f_map.id': mv.mapID, s_title: 'asc', 'page-size': 1000}, (featureInfo) => {
+        let features = mv.corpus.getAssociatedContents('Map', mv.mapID, 'Feature')
+        if (features.length) {
+            appendToEl(metaDiv, `
+                <div class="feature-detail-metadatum values-below">
+                    <div class="feature-detail-metadatum-field white-bg">Features</div>
+                    <div id="feature-div" class="feature-detail-metadatum-value white-bg"></div>
+                </div>
+            `)
+            let featureDiv = getEl('feature-div')
+            let dragon = window.mv.dragon
+            let colorClasses = ['yellow', 'red', 'blue']
 
-            if (featureInfo.records) {
+            features.forEach((feature, featureCount) => {
+                let colorClass = colorClasses[featureCount % colorClasses.length]
+                let d = extractFeatureDimensions(feature.image_url)
 
-                appendToEl(metaDiv, `
-                    <div class="feature-detail-metadatum values-below">
-                        <div class="feature-detail-metadatum-field">Features</div>
-                        <div id="feature-div" class="feature-detail-metadatum-value white-bg"></div>
-                    </div>
-                `)
-                let featureDiv = getEl('feature-div')
-                let dragon = window.mv.dragon
-                let colorClasses = ['yellow', 'red', 'blue']
-
-                featureInfo.records.forEach((feature, featureCount) => {
-                    let colorClass = colorClasses[featureCount % colorClasses.length]
-                    let d = extractFeatureDimensions(feature.image_url)
-
-                    // sanity check
-                    if (d.width > 0) {
-                        // create feature link
-                        appendToEl(featureDiv, `
+                // sanity check
+                if (d.width > 0) {
+                    // create feature link
+                    appendToEl(featureDiv, `
                         <a href="#" id="feature-link-${feature.id}" class="feature-link clickable-feature"
                             data-id="${feature.id}"
                             data-uri="${d.uri}"
@@ -203,49 +205,75 @@
                         <div id="feature-metadata-pane-${feature.id}" class="feature-metadata-pane"></div>
                     `)
 
-                        // create overlay
-                        let imageRect = new OpenSeadragon.Rect(
-                            d.x,
-                            d.y,
-                            d.width,
-                            d.height
-                        )
-                        let viewportRect = dragon.viewport.imageToViewportRectangle(imageRect)
+                    // create overlay
+                    let imageRect = new OpenSeadragon.Rect(
+                        d.x,
+                        d.y,
+                        d.width,
+                        d.height
+                    )
+                    let viewportRect = dragon.viewport.imageToViewportRectangle(imageRect)
 
-                        let overlay = document.createElement('div')
-                        overlay.id = `feature-overlay-${feature.id}`
-                        overlay.dataset.id = feature.id
-                        overlay.dataset.uri = d.uri
-                        overlay.dataset.x = d.x
-                        overlay.dataset.y = d.y
-                        overlay.dataset.width = d.width
-                        overlay.dataset.height = d.height
-                        overlay.classList.add('feature-overlay')
-                        overlay.classList.add(colorClass)
+                    let overlay = document.createElement('div')
+                    overlay.id = `feature-overlay-${feature.id}`
+                    overlay.dataset.id = feature.id
+                    overlay.dataset.uri = d.uri
+                    overlay.dataset.x = d.x
+                    overlay.dataset.y = d.y
+                    overlay.dataset.width = d.width
+                    overlay.dataset.height = d.height
+                    overlay.classList.add('feature-overlay')
+                    overlay.classList.add(colorClass)
+                    overlay.classList.add('disabled')
 
-                        dragon.addOverlay({ element: overlay, location: viewportRect })
+                    dragon.addOverlay({ element: overlay, location: viewportRect })
+                }
+            })
+
+            // rig up click events for features
+            forElsMatching('.clickable-feature', (featureEl) => {
+                featureEl.addEventListener('mouseenter', (e) => {
+                    let featureID = e.target.dataset.id
+                    let overlay = getEl('feature-overlay-' + featureID)
+                    if (overlay) {
+                        overlay.classList.remove('disabled')
                     }
                 })
 
-                // rig up click events for features
-                forElsMatching('.clickable-feature', (featureEl) => {
-                    featureEl.addEventListener('click', (e) => {
-                        window.mv.detailer.showFeatureDetails(e.target, getEl(`feature-metadata-pane-${e.target.dataset.id}`))
-                        e.preventDefault()
-                    })
+                featureEl.addEventListener('mouseleave', (e) => {
+                    let featureID = e.target.dataset.id
+                    let overlay = getEl('feature-overlay-' + featureID)
+                    if (overlay) {
+                        overlay.classList.add('disabled')
+                    }
                 })
 
-                forElsMatching('.feature-overlay', (overlay) => {
-                    let mouseTracker = new OpenSeadragon.MouseTracker({
-                        element: overlay,
-                        clickHandler: (e) => {
-                            window.mv.detailer.showFeatureDetails(overlay, getEl(`feature-metadata-pane-${overlay.dataset.id}`))
-                            return true
-                        }
-                    })
+                featureEl.addEventListener('click', (e) => {
+                    window.mv.detailer.showFeatureDetails(e.target, getEl(`feature-metadata-pane-${e.target.dataset.id}`))
+                    e.preventDefault()
                 })
+            })
+
+            forElsMatching('.feature-overlay', (overlay) => {
+                let mouseTracker = new OpenSeadragon.MouseTracker({
+                    element: overlay,
+                    clickHandler: (e) => {
+                        window.mv.detailer.showFeatureDetails(overlay, getEl(`feature-metadata-pane-${overlay.dataset.id}`))
+                        return true
+                    }
+                })
+            })
+
+            // HANDLE A FEATURE ID BEING PASSED IN AS GET PARAM
+            if (mv.urlParams.has('feature-id')) {
+                console.log('hello?')
+                let featureID = mv.urlParams.get('feature-id')
+                let featureLink = getEl(`feature-link-${featureID}`)
+                let featureMetaDiv = getEl(`feature-metadata-pane-${featureID}`)
+                console.log(featureMetaDiv)
+                window.mv.detailer.showFeatureDetails(featureLink, featureMetaDiv)
             }
-        })
+        }
     }
 
 </script>

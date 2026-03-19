@@ -1,12 +1,8 @@
 class Gallery {
-    constructor(parent, contentType, label, heightRestricted, filters={}, callback=null) {
+    constructor(parent, contentType, label, heightRestricted, contentIDs=null, callback=null) {
         this.mv = window.mv
         this.parent = parent
         this.contentType = contentType
-        this.defaultFilters = {'page': 1, 'page-size': 10000, 'only': 'id,image_url,title,map.id,tags.id,events.id,locations.id'}
-        this.defaultFilters[`s_${this.mv.corpus.meta[contentType].sortField}`] = 'asc'
-        this.defaultFilters[`e_${this.mv.corpus.meta[contentType].imageField}`] = 'y'
-        this.filters = Object.assign(this.defaultFilters, filters)
         this.label = label
         this.galleryID = 0
         this.borderClasses = ['yellow', 'red', 'blue']
@@ -20,19 +16,17 @@ class Gallery {
         }
         this.borderClass = this.borderClasses[this.galleryID % this.borderClasses.length]
         appendToEl(parent, `
-            <div id="gallery-${this.galleryID}" class="gallery ${this.borderClass}">
-                <div class="gallery-header">${this.label} <span id="gallery-${this.galleryID}-count-badge" class="count-badge"></span></div>
-                <div class="gallery-container${ heightRestricted ? ' height-restricted' : '' }">
-                    <div id="gallery-${this.galleryID}-content" class="gallery-content"></div>
-                </div>
+            <div id="gallery-${this.galleryID}" class="gallery ${this.borderClass}${ heightRestricted ? ' height-restricted' : '' }">
+                <div id="gallery-${this.galleryID}-header" class="gallery-header">${this.label} <span id="gallery-${this.galleryID}-count-badge" class="count-badge"></span></div>
+                <div id="gallery-${this.galleryID}-content" class="gallery-content"></div>
             </div>
         `)
+
         this.element = getEl(`gallery-${this.galleryID}`)
         this.galleryContentDiv = getEl(`gallery-${this.galleryID}-content`)
 
         // adjust according to content type
         if (contentType === 'Map') {
-            this.defaultFilters['only'] = 'iiif_url,title,military_unit.id'
             this.galleryContentDiv.classList.add('map')
         }
 
@@ -67,11 +61,17 @@ class Gallery {
             </div>
         `
 
-        callAPI(`${this.mv.api}/${this.contentType}/`, this.filters, (imgData) => {
-            if (imgData.records) {
-                getEl(`gallery-${this.galleryID}-count-badge`).innerHTML = imgData.records.length
+        // set total images
+        let totalImages = this.mv.corpus.meta[contentType].ids.length
+        if (contentIDs !== null) totalImages = contentIDs.size
+        getEl(`gallery-${this.galleryID}-count-badge`).innerHTML = totalImages.toLocaleString()
 
-                imgData.records.forEach((image) => {
+        // display gallery
+        mv.corpus.meta[contentType].ids.forEach(contentID => {
+            if (contentIDs === null || contentIDs.has(contentID)) {
+                let image = mv.corpus.getContent(contentType, contentID)
+
+                if (image[this.mv.corpus.meta[this.contentType].imageField]) {
                     let imgInfo = extractFeatureDimensions(image[this.mv.corpus.meta[this.contentType].imageField])
                     if (imgInfo !== null) {
                         imgInfo['id'] = image.id
@@ -81,14 +81,13 @@ class Gallery {
 
                         this.mv.galleryIDs.add(image.id)
                         image.contentType = this.contentType
-                        this.mv.corpus.registerConnections(image)
                     }
-                })
-
-                setTimeout(() => forElsMatching('.gallery-pane', (pane) => this.paneObserver.observe(pane)), 1000)
-                if (callback !== null) callback()
+                }
             }
         })
+
+        setTimeout(() => forElsMatching('.gallery-pane', (pane) => this.paneObserver.observe(pane)), 1000)
+        if (callback !== null) callback()
     }
 
     buildImagePane(pane) {
@@ -121,6 +120,7 @@ class Gallery {
 
         pane.innerHTML = `
             <img src="${imgSrc}" alt="${escapeAttrVal(pane.dataset.title)}"></img>
+            <div class="tray">${pane.dataset.title}</div>
         `
 
         pane.setAttribute('data-loaded', 'y')

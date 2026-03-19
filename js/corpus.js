@@ -10,13 +10,13 @@ class Corpus {
             },
             Event: {
                 is_facet: true,
-                xRefs: [{field: 'locations', reference: 'Place', via: null, multi: true}],
+                xRefs: [{field: 'locations', reference: 'Place', multi: true}],
                 sortField: 'name',
                 ids: []
             },
             Place: {
                 is_facet: true,
-                xRefs: [{field: 'regions', reference: 'Region', via: null, multi: true}],
+                xRefs: [{field: 'regions', reference: 'Region', multi: true}],
                 sortField: 'name',
                 ids: []
             },
@@ -41,9 +41,9 @@ class Corpus {
             Map: {
                 is_facet: true,
                 xRefs: [
-                    {field: 'artists', reference: 'Person', via: null, multi: true},
-                    {field: 'printers', reference: 'Person', via: null, multi: true},
-                    {field: 'military_unit', reference: 'Unit', via: null, multi: false},
+                    {field: 'artists', reference: 'Person', multi: true},
+                    {field: 'printers', reference: 'Person', multi: true},
+                    {field: 'military_unit', reference: 'Unit', multi: false},
                 ],
                 sortField: 'title',
                 imageField: 'iiif_url',
@@ -51,14 +51,13 @@ class Corpus {
                 ids: []
             },
             Feature: {
-                is_facet: false,
+                is_facet: true,
                 xRefs: [
-                    {field: 'map', reference: 'Unit', via: 'Map', multi: false},
-                    {field: 'tags', reference: 'Tag', via: null, multi: true},
-                    {field: 'events', reference: 'Event', via: null, multi: true},
-                    {field: 'locations', reference: 'Place', via: null, multi: true},
-                    {field: 'locations', reference: 'Region', via: 'Place', multi: true},
-                    {field: 'referenced_people', reference: 'Person', via: null, multi: true},
+                    {field: 'map', reference: 'Map', multi: false},
+                    {field: 'tags', reference: 'Tag', multi: true},
+                    {field: 'events', reference: 'Event', multi: true},
+                    {field: 'locations', reference: 'Place', multi: true},
+                    {field: 'referenced_people', reference: 'Person', multi: true},
                 ],
                 sortField: 'title',
                 imageField: 'image_url',
@@ -66,8 +65,16 @@ class Corpus {
                 ids: []
             }
         }
+        this.indirectConnections = [
+            ['Feature', 'Map', 'Unit'],
+            ['Feature', 'Place', 'Region'],
+            ['Map', 'Feature', 'Tag'],
+            ['Map', 'Feature', 'Event'],
+            ['Map', 'Feature', 'Place'],
+            ['Map', 'Place', 'Region']
+        ]
         this.content = {}
-        this.connections = {}
+        this.connections = new Set()
     }
 
     async build(callback) {
@@ -87,12 +94,13 @@ class Corpus {
                     this.meta[facet].ids.push(record.id)
                     this.content[facet][record.id] = record
                     this.content[facet][record.id]['contentType'] = facet
+                    this.content[facet][record.id]['_conns'] = {}
                 })
             }
         })
 
         // wire up any xrefs
-        Object.keys(this.meta).forEach(facet => {
+        forEachKey(this.meta, facet => {
             if (this.meta[facet].is_facet) {
                 let contents = this.getContents(facet)
                 contents.forEach(content => {
@@ -100,6 +108,9 @@ class Corpus {
                 })
             }
         })
+
+        // wire up indirect connections
+        this.registerIndirectConnections()
 
         callback()
     }
@@ -123,34 +134,30 @@ class Corpus {
 
     getAssociatedContents(contentType, id, associatedContentType=null) {
         let associatedContents = []
-        let keyFragment = `${contentType}-${id}`
-
-        Object.keys(mv.corpus.connections).forEach(connectionKey => {
-            let matchFound = false
-
-            if (connectionKey.includes(keyFragment)) {
-                if (associatedContentType !== null) {
-                    if (connectionKey.includes(`${associatedContentType}-`)) {
-                        matchFound = true
-                    }
-                } else matchFound = true
-            }
-
-            if (matchFound) {
-                let associatedKeyFragment = connectionKey.replace(keyFragment, '').replace('--', '')
-                let [associatedContentType, associatedID] = associatedKeyFragment.split('-')
-                let content = this.getContent(associatedContentType, associatedID)
-                if (content !== null) associatedContents.push(content)
-            }
-        })
-
+        let content = this.getContent(contentType, id)
+        if (content) {
+            forEachKey(content._conns, connectedContentType => {
+                if (connectedContentType === associatedContentType || associatedContentType === null) {
+                    content._conns[connectedContentType].forEach(connectedContentID => {
+                        associatedContents.push(this.getContent(connectedContentType, connectedContentID))
+                    })
+                }
+            })
+        }
         return associatedContents
     }
 
-    buildConnectionKey(contentType_a, id_a, contentType_b, id_b) {
-        let connectionKeyParts = [`${contentType_a}-${id_a}`, `${contentType_b}-${id_b}`]
-        connectionKeyParts.sort()
-        return connectionKeyParts.join('--')
+    makeConnection(contentType_a, id_a, contentType_b, id_b) {
+        let contentA = this.getContent(contentType_a, id_a)
+        let contentB = this.getContent(contentType_b, id_b)
+
+        if (contentA && contentB) {
+            if (!(contentB.contentType in contentA._conns)) contentA._conns[contentB.contentType] = new Set()
+            if (!(contentA.contentType in contentB._conns)) contentB._conns[contentA.contentType] = new Set()
+
+            contentA._conns[contentB.contentType].add(contentB.id)
+            contentB._conns[contentA.contentType].add(contentA.id)
+        }
     }
 
     registerConnections(content) {
@@ -160,67 +167,54 @@ class Corpus {
                     if (xRef.multi) {
                         content[xRef.field].forEach(val => {
                             if (val.id) {
-                                if (xRef.via === null) {
-                                    let connectionKey = this.buildConnectionKey(
-                                        content.contentType,
-                                        content.id,
-                                        xRef.reference,
-                                        val.id
-                                    )
-                                    this.connections[connectionKey] = true
-                                } else {
-                                    let indirectContents = this.getAssociatedContents(xRef.via, val.id, xRef.reference)
-                                    indirectContents.forEach(c => {
-                                        let connectionKey = this.buildConnectionKey(
-                                            content.contentType,
-                                            content.id,
-                                            xRef.reference,
-                                            c.id
-                                        )
-                                        this.connections[connectionKey] = true
-                                    })
-                                }
-                            }
-                        })
-                    } else if (content[xRef.field].id) {
-                        if (xRef.via === null) {
-                            let connectionKey = this.buildConnectionKey(
-                                content.contentType,
-                                content.id,
-                                xRef.reference,
-                                content[xRef.field].id
-                            )
-                            this.connections[connectionKey] = true
-                        } else {
-                            let indirectContents = this.getAssociatedContents(xRef.via, content[xRef.field].id, xRef.reference)
-                            indirectContents.forEach(c => {
-                                let connectionKey = this.buildConnectionKey(
+                                this.makeConnection(
                                     content.contentType,
                                     content.id,
                                     xRef.reference,
-                                    c.id
+                                    val.id
                                 )
-                                this.connections[connectionKey] = true
-                            })
-                        }
+                            }
+                        })
+                    } else if (content[xRef.field].id) {
+                        this.makeConnection(
+                            content.contentType,
+                            content.id,
+                            xRef.reference,
+                            content[xRef.field].id
+                        )
                     }
                 }
             })
         }
     }
 
-    showConnectionStats() {
-        let conns = {}
+    registerIndirectConnections() {
+        this.indirectConnections.forEach(triple => {
+            let rootCT = triple[0]
+            let mediatingCT = triple[1]
+            let leafCT = triple[2]
 
-        Object.keys(this.connections).forEach(key => {
-            const match = key.match(/([^-]*)-[^-]*--([^-]*)-[^-]*/)
-            if (match) {
-                let con = `${match[1]}-${match[2]}`
-                if (!(con in conns)) conns[con] = 0
-                conns[con] += 1
-            }
+            let rootContents = this.getContents(rootCT)
+            rootContents.forEach(rootContent => {
+                let mediatingContents = this.getAssociatedContents(rootCT, rootContent.id, mediatingCT)
+                mediatingContents.forEach(mediatingContent => {
+                    let leafContents = this.getAssociatedContents(mediatingCT, mediatingContent.id, leafCT)
+                    leafContents.forEach(leafContent => {
+                        this.makeConnection(rootCT, rootContent.id, leafCT, leafContent.id)
+                    })
+                })
+            })
         })
+    }
 
-        return conns
+    getTotalConnections(contentTypeA, contentIDA, contentTypeB) {
+        let total = 0
+        let content = this.getContent(contentTypeA, contentIDA)
+        if (content) {
+            if (contentTypeB in content._conns) {
+                total = content._conns[contentTypeB].size
+            }
+        }
+        return total
     }
 }
