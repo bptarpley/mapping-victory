@@ -73,8 +73,7 @@
             <div id="galleries"></div>
         </div>
     </main>
-    <footer>
-
+    <footer id="footer">
     </footer>
 
     <script src="js/openseadragon/openseadragon.min.js"></script>
@@ -101,6 +100,9 @@
             urlParams: new URLSearchParams(window.location.search)
         }
         window.mv['api'] = `${mv.corporaHost}/api/corpus/${mv.corpusID}`
+
+        // load footer
+        getEl('footer').innerHTML = mvTemplates.footer()
 
         // MAIN ENTRY POINT
         document.addEventListener('DOMContentLoaded', function() {
