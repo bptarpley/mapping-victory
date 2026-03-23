@@ -313,7 +313,7 @@ class Faceter {
                         appendToEl(filterIndicatorDiv, `
                             <span class="filter-indicator ${bgClasses[filterCounter % bgClasses.length]}">
                                 ${this.filterTracker[facet].label}: ${content.label}
-                                <button class="filter-delete-button" aria-label="Delete"
+                                <button class="filter-delete-button icon-button" aria-label="Delete"
                                     data-facet="${facet}" data-id="${val}">
                                     <svg width="14" height="14"><use href="#icon-close"/></svg>
                                 </button>
@@ -333,7 +333,7 @@ class Faceter {
                 appendToEl(filterIndicatorDiv, `
                     <span class="filter-indicator ${bgClasses[filterCounter % bgClasses.length]}">
                         Search: ${this.search}
-                        <button class="filter-delete-button" aria-label="Delete"
+                        <button class="filter-delete-button icon-button" aria-label="Delete"
                             data-facet="Search" data-id="">
                             <svg width="14" height="14"><use href="#icon-close"/></svg>
                         </button>
@@ -362,7 +362,7 @@ class Faceter {
         if (url === null) url = this.buildFilterLink(null, null, false)
 
         appendToEl(parent, `
-            <button class="filter-share-button"
+            <button class="filter-share-button icon-button"
                 aria-label="Copy share link"
                 data-link="${url}"
                 data-tippy-content="Copy share link">
@@ -427,10 +427,13 @@ class Faceter {
         // check for search keywords specifically which will automatically filter the gallery
         if (this.mv.urlParams.has('search')) {
             this.performSearch(this.mv.urlParams.get('search'))
+            filteredOnLoad = true
             // or manually filter gallery if other GET params were present
         } else if (filteredOnLoad) {
             this.filterGallery()
             // or just load the default galleries
         } else this.mv.showDefaultGalleries()
+
+        return filteredOnLoad
     }
 }

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapping Victory</title>
+    <link rel="stylesheet" href="https://use.typekit.net/jjk5ixf.css">
+    <link rel="stylesheet" href="js/leaflet/leaflet.css">
+    <link rel="stylesheet" href="js/markercluster/MarkerCluster.css">
+    <link type="text/css" rel="stylesheet" href="css/mapping_victory.css">
+</head>
+<body class="boilerplate">
+<!-- SVG Graphics -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+    <symbol id="icon-close" viewBox="0 0 16 16">
+        <line x1="4" y1="4" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="12" y1="4" x2="4" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-share" viewBox="0 0 35.74 35.74">
+        <circle cx="17.87" cy="17.87" r="17.87" fill="#292419"/>
+        <g>
+            <path d="M25.6,14.01c-.43,0-.77.35-.77.77v10.05h-13.91v-10.05c0-.43-.35-.77-.77-.77s-.77.35-.77.77v10.82c0,.43.35.77.77.77h15.46c.43,0,.77-.35.77-.77v-10.82c0-.43-.35-.77-.77-.77Z" fill="#eeeee6" stroke="#eeeee6" stroke-miterlimit="10" stroke-width=".5px"/>
+            <path d="M15.32,13.78l1.77-1.77v8.18c0,.43.35.77.77.77s.77-.35.77-.77v-8.18l1.77,1.77c.15.15.35.23.55.23s.4-.08.55-.23c.3-.3.3-.79,0-1.09l-3.09-3.09c-.3-.3-.79-.3-1.09,0l-3.09,3.09c-.3.3-.3.79,0,1.09.3.3.79.3,1.09,0h0Z" fill="#eeeee6" stroke="#eeeee6" stroke-miterlimit="10" stroke-width=".5px"/>
+        </g>
+    </symbol>
+</svg>
+
+<header class="boilerplate">
+    <div class="header-links">
+        <a href="about.html">About</a>
+        <a href="index.html">Gallery</a>
+    </div>
+</header>
+
+<main class="boilerplate">
+    <div class="boilerplate-page-section">
+        <div class="page-section-header">
+            About
+        </div>
+        <div class="page-section-content">
+            <div id="logo-container">
+                <img src="images/logo.svg" alt="Mapping Victory: U.S. Army Souvenir Maps from the European Theater of Operations, 1944-46">
+            </div>
+        </div>
+    </div>
+
+    <section class="boilerplate-page-section">
+        <div class="page-section-header no-border"></div>
+        <div class="page-section-content">
+            <p>
+                At the end of World War II, hundreds of U.S. Army units in the European Theater of Operations
+                produced souvenir maps for soldiers and officers to take home.  Units of all sizes produced maps,
+                ranging from Army Corps to companies.  These maps tell the story of the war through the eyes of the
+                men who served.  They are some of the first written testimonies about the experience of war in Europe.
+            </p>
+            <p>
+                Cushing Library and Archives at Texas A&M University holds a large collection of these remarkable
+                artifacts.  Here, you will find more than a hundred maps, carefully annotated and made available for
+                researchers.  This is a rich corpus of data about American service in wartime Europe.  There are
+                thousands of images, place names, and people searchable across the map collection.  You can search
+                by events, or by curated themes that appear throughout the collections.
+            </p>
+            <p>
+                Some of these maps are colorful, while others contain lots of factual detail. In some cases, we know a
+                great deal about the artists who prepared the maps, while others are lost to history.  Some maps
+                include humorous details, inside jokes, and moments of joy.  Others tell stories of sorrow and loss
+                and the violence of war.
+            </p>
+            <p>
+                These maps are some of the first records of American encounters with Nazi crimes, including
+                concentration camps, forces labor facilities, and POW camps.  They reflect soldiers’ preoccupations
+                with meeting women and enjoying wine and beer.  There are also faithful renderings of some of Europe’s
+                great artistic and architectural landmarks, as well as depictions of ruined cities and the
+                devastation of war.
+            </p>
+            <p>
+                We invite you to explore this collection for yourself.  Our team is continuing to add to the corpus of
+                maps and to provide new data to the collection.
+            </p>
+            <p>
+                Contact email:
+                <a href="mailto:mappingvictory@tamu.edu" class="link-button">mappingvictory@tamu.edu</a>
+            </p>
+        </div>
+    </section>
+
+    <section class="boilerplate-page-section">
+        <div class="page-section-header">Contributors</div>
+        <div class="page-section-content">
+            <dl>
+                <dt>Principle Investigator:</dt>
+                <dd>Dr. Adam R. Seipp</dd>
+
+                <dt>Site Designer:</dt>
+                <dd>Kayley Hart</dd>
+
+                <dt>Technical Editor and Site Developer:</dt>
+                <dd>Dr. Bryan Tarpley</dd>
+
+                <dt>Digital Collections Manager:</dt>
+                <dd>Mark Baggett</dd>
+
+                <dt>Special Collections Manager:</dt>
+                <dd>Anton Duplessis</dd>
+
+                <dt>Student Researchers:</dt>
+                <dd>
+                    Ilian Arellano<br />
+                    Jaden Chin<br />
+                    Bella Frano<br />
+                    James Franco<br />
+                    Travis Griffing<br />
+                    Samuel Hunt<br />
+                    Brent Johnson<br />
+                    Brooke Kingston<br />
+                    Campbell Morrow<br />
+                    Annie Ngo<br />
+                    Joshua Ward<br />
+                    Nicholas Zhou
+                </dd>
+            </dl>
+        </div>
+    </section>
+</main>
+<footer>
+
+</footer>
+
+<script src="js/openseadragon/openseadragon.min.js"></script>
+<script src="js/leaflet/leaflet.js"></script>
+<script src="js/markercluster/leaflet.markercluster.js"></script>
+<script src="js/utilities.js"></script>
+<script src="js/corpus.js"></script>
+<script src="js/faceter.js"></script>
+<script src="js/detailer.js"></script>
+<script src="js/map-feature.js"></script>
+
+<script language="javascript">
+    window.mv = {
+        corporaHost: 'https://corpora.library.tamu.edu',
+        corpusID: '66d0cf276083e79367c617c6',
+        corpus: null,
+        faceter: null,
+        dragon: null,
+        detailer: null,
+        mapID: null,
+        urlParams: new URLSearchParams(window.location.search),
+
+    }
+    window.mv['api'] = `${mv.corporaHost}/api/corpus/${mv.corpusID}`
+
+    // MAIN ENTRY POINT
+    document.addEventListener('DOMContentLoaded', function() {})
+
+</script>
+</body>
+</html>

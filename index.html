@@ -33,12 +33,12 @@
 
     <header>
         <div class="header-links">
-            <a href="/">About</a>
-            <a href="/">Gallery</a>
-            <a href="/">Essays</a>
+            <a href="about.html">About</a>
+            <a href="index.html">Gallery</a>
         </div>
-        <h1>Mapping Victory</h1>
-        <h2>U.S. Army Souvenir Maps from the European Theater of Operations, 1944-46</h2>
+        <div id="logo-container" class="gallery-page">
+            <img src="images/logo.svg" alt="Mapping Victory: U.S. Army Souvenir Maps from the European Theater of Operations, 1944-46">
+        </div>
         <div class="toggle-switch-container">
             <span class="toggle-switch">
                 <a href="index.html" class="active left">Features <span id="total-features-counter" class="count-badge">100</span></a>
@@ -51,6 +51,24 @@
             <input type="text" id="gallery-search-box" placeholder="Search">
         </div>
         <div id="gallery-div">
+            <div id="splash-div">
+                <div id="splash-controls">
+                    <button id="splash-close-button" class="icon-button" aria-label="Close">
+                        <svg width="18" height="18"><use href="#icon-close"/></svg>
+                    </button>
+                </div>
+                <p>Welcome to Mapping Victory!</p>
+
+                <p>
+                    This project is a digital collection of souvenir maps produced by U.S. Army units at the end of
+                    World War II in Europe. These maps tell the story of the war through the eyes of the soldiers
+                    who served in it. They provide a window into the ways that Americans experienced the war, the
+                    transition to peace, the discovery of Nazi crimes, and their encounter with the people and places
+                    of Europe and the Mediterranean.
+                </p>
+
+                <p><a href="about.html" class="link-button">Learn more about this project</a></p>
+            </div>
             <div id="filter-indicator-div" class="hidden"></div>
             <div id="galleries"></div>
         </div>
@@ -127,7 +145,15 @@
 
                 // respond to page load based on any GET params
                 // or perform default behavior
-                mv.faceter.handlePageLoad()
+                let filteredOnLoad = mv.faceter.handlePageLoad()
+
+                // handle dismissible splash message
+                let splashDiv = getEl('splash-div')
+                getEl('splash-close-button').addEventListener('click', (e) => {
+                    splashDiv.classList.add('hidden')
+                    sessionStorage.setItem('splashDismissed', 'true')
+                })
+                if (sessionStorage.getItem('splashDismissed') || filteredOnLoad) splashDiv.classList.add('hidden')
 
                 // rig up gallery pane click event
                 document.addEventListener('click', (e) => {

@@ -8,7 +8,7 @@ class Detailer {
         this.modalTemplate = `
             <div id="feature-detail-modal" class="hidden">
                 <div id="feature-detail-controls">
-                    <button id="feature-detail-close-button" aria-label="Close">
+                    <button id="feature-detail-close-button" class="icon-button" aria-label="Close">
                         <svg width="20" height="20"><use href="#icon-close"/></svg>
                     </button>
                 </div>
