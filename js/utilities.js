@@ -6,7 +6,7 @@ const mvTemplates = {
         </div>
         <div id="footer-content">
             This project is a collaborative effort by faculty, students, and staff from the Texas A&M Department of 
-            History, University Libraries, Center for Digital Humanities Research, College of Arts and Sciences, 
+            History, University Libraries, Center of Digital Humanities Research, College of Arts and Sciences, 
             and Melbern G. Glasscock Center for Humanities Research.
         </div>
     `
