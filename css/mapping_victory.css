@@ -45,6 +45,7 @@ a.logo { text-decoration: none; }
     width: 100%;
     max-width: min(70vw, 970px);
 }
+#logo-container a { width: 100%; }
 #logo-container.gallery-page {
     display: flex;
     flex-direction: row;
