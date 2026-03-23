@@ -1,3 +1,17 @@
+// templates for site-wide use
+const mvTemplates = {
+    footer: (p) => `
+        <div id="footer-logo">
+            <img src="images/tamu-logo.png" alt="Texas A&M University Logo" />
+        </div>
+        <div id="footer-content">
+            This project is a collaborative effort by faculty, students, and staff from the Texas A&M Department of 
+            History, University Libraries, Center for Digital Humanities Research, College of Arts and Sciences, 
+            and Melbern G. Glasscock Center for Humanities Research.
+        </div>
+    `
+}
+
 // for getting/manipulating DOM
 function getEl(id) { return document.getElementById(id) }
 function getElWithQuery(query) { return document.querySelector(query) }

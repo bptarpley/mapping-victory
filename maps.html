@@ -55,8 +55,7 @@
             <div id="galleries"></div>
         </div>
     </main>
-    <footer>
-
+    <footer id="footer">
     </footer>
 
     <script src="js/openseadragon/openseadragon.min.js"></script>
@@ -83,6 +82,9 @@
         }
         window.mv['api'] = `${mv.corporaHost}/api/corpus/${mv.corpusID}`
 
+        // load footer
+        getEl('footer').innerHTML = mvTemplates.footer()
+
         // MAIN ENTRY POINT
         document.addEventListener('DOMContentLoaded', function() {
             mv.corpus = new Corpus()
@@ -106,7 +108,7 @@
                 mv.showDefaultGalleries = () => {
                     let galleryDiv = getEl('galleries')
                     clearEl(galleryDiv)
-                    new Gallery(galleryDiv, 'Map', 'Featured', false)
+                    new Gallery(galleryDiv, 'Map', 'All Maps', false)
                 }
 
                 // respond to page load based on any GET params
