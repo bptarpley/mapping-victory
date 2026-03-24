@@ -104,6 +104,17 @@
                 mv.faceter.buildFacetList('Unit', 'Units')
                 mv.faceter.buildFacetList('Region', 'Places')
 
+                // sort map IDs by num features each have
+                mv.corpus.meta.Map.ids = Object.keys(mv.corpus.content.Map).sort((a, b) => {
+                    let numFeaturesA = 0
+                    let numFeaturesB = 0
+
+                    if (mv.corpus.content.Map[a]._conns?.Feature) numFeaturesA = mv.corpus.content.Map[a]._conns.Feature.size
+                    if (mv.corpus.content.Map[b]._conns?.Feature) numFeaturesB = mv.corpus.content.Map[b]._conns.Feature.size
+
+                    return numFeaturesB - numFeaturesA
+                })
+
                 // determine default behavior for page load
                 mv.showDefaultGalleries = () => {
                     let galleryDiv = getEl('galleries')
