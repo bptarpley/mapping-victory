@@ -76,6 +76,7 @@ class Corpus {
         this.indirectConnections = [
             ['Feature', 'Map', 'Unit'],
             ['Feature', 'Place', 'Region'],
+            ['Feature', 'Map', 'Person'],
             ['Map', 'Feature', 'Tag'],
             ['Map', 'Feature', 'Event'],
             ['Map', 'Feature', 'Place'],
@@ -129,9 +130,26 @@ class Corpus {
     }
 
     getContent(contentType, id) {
+        // for content that gets fully loaded because it's a facet
         if (contentType in this.content) {
             if (id in this.content[contentType]) return this.content[contentType][id]
         }
+
+        // for content that isn't a facet but should be interlinked anyway
+        if (contentType in this.meta) {
+            if (!this.meta[contentType].is_facet) {
+                if (!(contentType in this.content)) this.content[contentType] = {}
+                this.content[contentType][id] = {
+                    id: id,
+                    contentType: contentType,
+                    label: contentType,
+                    _conns: {}
+                }
+            }
+
+            return this.content[contentType][id]
+        }
+
         return null
     }
 

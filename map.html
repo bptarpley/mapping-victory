@@ -103,7 +103,7 @@
                         appendToEl(metaDiv, `
                             <div class="feature-detail-metadatum">
                                 <div class="feature-detail-metadatum-field white-bg">Unit</div>
-                                <div class="feature-detail-metadatum-value white-bg">${map.military_unit.label}</div>
+                                <div class="feature-detail-metadatum-value white-bg"><a href="index.html?Unit=${map.military_unit.id}">${map.military_unit.label}</a></div>
                             </div>
                         `)
                     }
@@ -122,7 +122,7 @@
                     if (map.artists && map.artists?.length) {
                         let people = []
                         map.artists.forEach(person => {
-                            people.push(`<a href="/">${person.label}</a>`)
+                            people.push(`<a href="index.html?Person=${person.id}">${person.label}</a>`)
                         })
                         appendToEl(metaDiv, `
                             <div class="feature-detail-metadatum">
@@ -136,7 +136,7 @@
                     if (map.printers && map.printers?.length) {
                         let people = []
                         map.printers.forEach(person => {
-                            people.push(`<a href="/">${person.label}</a>`)
+                            people.push(`<a href="index.html?Person=${person.id}">${person.label}</a>`)
                         })
                         appendToEl(metaDiv, `
                             <div class="feature-detail-metadatum">
@@ -259,7 +259,8 @@
                 let mouseTracker = new OpenSeadragon.MouseTracker({
                     element: overlay,
                     clickHandler: (e) => {
-                        window.mv.detailer.showFeatureDetails(overlay, getEl(`feature-metadata-pane-${overlay.dataset.id}`))
+                        let featureLink = getEl(`feature-link-${overlay.dataset.id}`)
+                        window.mv.detailer.showFeatureDetails(featureLink, getEl(`feature-metadata-pane-${overlay.dataset.id}`))
                         return true
                     }
                 })
@@ -271,7 +272,6 @@
                 let featureID = mv.urlParams.get('feature-id')
                 let featureLink = getEl(`feature-link-${featureID}`)
                 let featureMetaDiv = getEl(`feature-metadata-pane-${featureID}`)
-                console.log(featureMetaDiv)
                 window.mv.detailer.showFeatureDetails(featureLink, featureMetaDiv)
             }
         }

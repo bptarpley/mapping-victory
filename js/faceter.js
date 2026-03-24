@@ -24,6 +24,11 @@ class Faceter {
                 targetIDs: new Set(),
                 label: 'Place',
             },
+            Person: {
+                values: new Set(),
+                targetIDs: new Set(),
+                label: 'Person'
+            },
             Unit: {
                 values: new Set(),
                 targetIDs: new Set(),
@@ -312,13 +317,20 @@ class Faceter {
                         let content = this.mv.corpus.getContent(facet, val)
                         appendToEl(filterIndicatorDiv, `
                             <span class="filter-indicator ${bgClasses[filterCounter % bgClasses.length]}">
-                                ${this.filterTracker[facet].label}: ${content.label}
+                                <span id="filter-indicator-label-${facet}-${val}">${this.filterTracker[facet].label}</span>: ${content.label}
                                 <button class="filter-delete-button icon-button" aria-label="Delete"
                                     data-facet="${facet}" data-id="${val}">
                                     <svg width="14" height="14"><use href="#icon-close"/></svg>
                                 </button>
                             </span>
                         `)
+                        if (!this.mv.corpus.meta[facet].is_facet) {
+                            callAPI(`${this.mv.api}/${facet}/${val}/`, {only: 'label'}, contentInfo => {
+                                if (contentInfo.label) {
+                                    getEl(`filter-indicator-label-${facet}-${val}`).innerHTML = contentInfo.label
+                                }
+                            })
+                        }
                         filterCounter += 1
                     })
                 }
@@ -416,7 +428,7 @@ class Faceter {
         // were passed in, indicating that we want to filter our gallery immediately
         // on load
         let filteredOnLoad = false
-        let filtersAvailableOnLoad = ['Tag', 'Event', 'Place', 'Unit']
+        let filtersAvailableOnLoad = ['Tag', 'Event', 'Place', 'Unit', 'Person']
         filtersAvailableOnLoad.forEach(filterAvailableOnLoad => {
             if (this.mv.urlParams.has(filterAvailableOnLoad)) {
                 let filterValues = this.mv.urlParams.get(filterAvailableOnLoad).split(',')
