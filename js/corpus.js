@@ -6,36 +6,42 @@ class Corpus {
                 is_facet: true,
                 xRefs: [],
                 sortField: 'name',
+                criteria: {},
                 ids: [],
             },
             Event: {
                 is_facet: true,
                 xRefs: [{field: 'locations', reference: 'Place', multi: true}],
                 sortField: 'name',
+                criteria: {},
                 ids: []
             },
             Place: {
                 is_facet: true,
                 xRefs: [{field: 'regions', reference: 'Region', multi: true}],
                 sortField: 'name',
+                criteria: {},
                 ids: []
             },
             Unit: {
                 is_facet: true,
                 xRefs: [],
                 sortField: 'name',
+                criteria: {},
                 ids: []
             },
             Region: {
                 is_facet: true,
                 xRefs: [],
                 sortField: 'name',
+                criteria: {},
                 ids: []
             },
             Person: {
                 is_facet: false,
                 xRefs: [],
                 sortField: 'name',
+                criteria: {},
                 ids: []
             },
             Map: {
@@ -48,6 +54,7 @@ class Corpus {
                 sortField: 'title',
                 imageField: 'iiif_url',
                 titleField: 'title',
+                criteria: {'f_published': 'true'},
                 ids: []
             },
             Feature: {
@@ -62,6 +69,7 @@ class Corpus {
                 sortField: 'title',
                 imageField: 'image_url',
                 titleField: 'title',
+                criteria: {},
                 ids: []
             }
         }
@@ -74,14 +82,19 @@ class Corpus {
             ['Map', 'Place', 'Region']
         ]
         this.content = {}
-        this.connections = new Set()
     }
 
     async build(callback) {
         // grab data and populate facets
         let apiCalls = []
         for (let facet in this.meta) {
-            if (this.meta[facet].is_facet) apiCalls.push(fetch(`${this.mv.api}/${facet}/?page-size=10000&s_${this.meta[facet].sortField}=asc`))
+            if (this.meta[facet].is_facet) {
+                let criteria = Object.assign({}, this.meta[facet].criteria, {
+                    'page-size': 10000,
+                })
+                criteria[`s_${this.meta[facet].sortField}`] = 'asc'
+                apiCalls.push(fetch(`${this.mv.api}/${facet}/?${buildGetParams(criteria)}`))
+            }
         }
         let responses = await Promise.all(apiCalls)
         let results = await Promise.all(responses.map(response => response.json()))

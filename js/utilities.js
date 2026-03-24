@@ -43,17 +43,22 @@ function setCssVar(variableName, value) {
 // basic utility functions
 function callAPI(url, params={}, callback) {
     let fetchURL = url
+    let getParams = buildGetParams(params)
+    if (getParams) fetchURL += `?${getParams}`
+    fetch(fetchURL)
+        .then(res => res.json())
+        .then(data => callback(data))
+}
+function buildGetParams(params) {
+    let getParams = ''
     if (Object.keys(params).length) {
-        fetchURL += '?'
         let paramStrings = []
         for (let param in params) {
             paramStrings.push(`${param}=${params[param]}`)
         }
-        fetchURL += paramStrings.join('&')
+        getParams += paramStrings.join('&')
     }
-    fetch(fetchURL)
-        .then(res => res.json())
-        .then(data => callback(data))
+    return getParams
 }
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
