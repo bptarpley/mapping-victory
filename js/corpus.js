@@ -85,20 +85,43 @@ class Corpus {
         this.content = {}
     }
 
-    async build(callback) {
+    async build(callback, useCache=true) {
         // grab data and populate facets
-        let apiCalls = []
+        let apiRequests = []
         for (let facet in this.meta) {
             if (this.meta[facet].is_facet) {
                 let criteria = Object.assign({}, this.meta[facet].criteria, {
                     'page-size': 10000,
                 })
                 criteria[`s_${this.meta[facet].sortField}`] = 'asc'
-                apiCalls.push(fetch(`${this.mv.api}/${facet}/?${buildGetParams(criteria)}`))
+                apiRequests.push({
+                    facet,
+                    url: `${this.mv.api}/${facet}/?${buildGetParams(criteria)}`
+                })
             }
         }
-        let responses = await Promise.all(apiCalls)
-        let results = await Promise.all(responses.map(response => response.json()))
+
+        const db = await this.#openDB()
+
+        let results = await Promise.all(apiRequests.map(async ({ facet, url }) => {
+            // Kick off the cache read and last-updated check in parallel
+            const cachedRecordPromise = db ? this.#dbGet(db, facet) : Promise.resolve(null)
+            const lastUpdatedPromise = fetch(`${this.mv.api}/${facet}/last-updated/`).then(r => r.json())
+            const [cachedRecord, lastUpdatedResponse] = await Promise.all([cachedRecordPromise, lastUpdatedPromise])
+
+            // Serve from cache if it exists and is still fresh
+            const cacheIsValid = cachedRecord && cachedRecord.last_updated >= lastUpdatedResponse.last_updated
+            if (db && useCache && cacheIsValid) return cachedRecord.data
+
+            // Cache is stale or bypassed -- fetch fresh data from the API
+            const response = await fetch(url)
+            const data = await response.json()
+
+            // Store fresh data in the cache for next time (non-blocking)
+            if (db) this.#dbPut(db, facet, { last_updated: lastUpdatedResponse.last_updated, data }).catch(err => console.warn(`Failed to cache ${facet}:`, err))
+
+            return data
+        }))
         results.forEach(result => {
             if (result.meta && result.records) {
                 let facet = result.meta.content_type
@@ -247,5 +270,36 @@ class Corpus {
             }
         }
         return total
+    }
+
+    #openDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('mv_corpus', 1)
+            request.onupgradeneeded = e => {
+                e.target.result.createObjectStore('responses', { keyPath: 'facet' })
+            }
+            request.onsuccess = e => resolve(e.target.result)
+            request.onerror = e => reject(e.target.error)
+        }).catch(() => null)
+    }
+
+    #dbGet(db, facet) {
+        return new Promise((resolve, reject) => {
+            const request = db.transaction('responses', 'readonly')
+                .objectStore('responses')
+                .get(facet)
+            request.onsuccess = e => resolve(e.target.result ?? null)
+            request.onerror = e => reject(e.target.error)
+        })
+    }
+
+    #dbPut(db, facet, payload) {
+        return new Promise((resolve, reject) => {
+            const request = db.transaction('responses', 'readwrite')
+                .objectStore('responses')
+                .put({ facet, ...payload })
+            request.onsuccess = () => resolve()
+            request.onerror = e => reject(e.target.error)
+        })
     }
 }
