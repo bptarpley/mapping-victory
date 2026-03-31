@@ -66,12 +66,14 @@ class Detailer {
         // display details, and show modal
         let feature = this.mv.corpus.getContent('Feature', pane.dataset.id)
         if (feature) {
-
+            let map = this.mv.corpus.getContent('Map', feature.map.id)
 
             // build tags, events, and places
             let tags = []
             let events = []
             let places = []
+            let artists = []
+            let printers = []
 
             if (feature.tags?.length) {
                 feature.tags.forEach(tag => {
@@ -94,17 +96,27 @@ class Detailer {
                     events.push(`<a href="${this.mv.faceter.buildFilterLink('Event', event.id, false, targetPage)}"${targetPage ? ' target="_blank"' : ''}>${event.name}</a>`)
                 })
             }
+            if (map.artists?.length) {
+                map.artists.forEach(artist => {
+                    artists.push(`<a href="${this.mv.faceter.buildFilterLink('Person', artist.id, false, targetPage)}"${targetPage ? ' target="_blank"' : ''}>${artist.name}</a>`)
+                })
+            }
+            if (map.printers?.length) {
+                map.printers.forEach(printer => {
+                    printers.push(`<a href="${this.mv.faceter.buildFilterLink('Person', printer.id, false, targetPage)}"${targetPage ? ' target="_blank"' : ''}>${printer.name}</a>`)
+                })
+            }
 
             appendToEl(metaPane, `
-                ${metadataPane === null ? `
-                    <div id="feature-detail-title" class="feature-detail-title">${feature.title}</div>
-                    <!-- map -->
-                    <div class="feature-detail-metadatum">
-                        <div class="feature-detail-metadatum-field">Map</div>
-                        <div class="feature-detail-metadatum-value">
-                            <a href="map.html?map-id=${feature.map.id}" target="_blank">${feature.map.title}</a>
-                        </div>
+                ${ metadataPane === null ? `
+                <div id="feature-detail-title" class="feature-detail-title">${feature.title}</div>
+                <!-- map -->
+                <div class="feature-detail-metadatum">
+                    <div class="feature-detail-metadatum-field">Map</div>
+                    <div class="feature-detail-metadatum-value">
+                        <a href="map.html?map-id=${map.id}" target="_blank">${map.title}</a>
                     </div>
+                </div>
                 ` : ''}
                 <!-- description -->
                 ${ feature.description ? `
@@ -118,6 +130,15 @@ class Detailer {
                 <div class="feature-detail-metadatum${metadataPane === null ? '' : ' values-below'}">
                     <div class="feature-detail-metadatum-field">Tags</div>
                     <div class="feature-detail-metadatum-value">${tags.join('\n')}</div>
+                </div>
+                ` : ''}
+                <!-- unit -->
+                ${ metadataPane === null && map.military_unit ? `
+                <div class="feature-detail-metadatum${metadataPane === null ? '' : ' values-below'}">
+                    <div class="feature-detail-metadatum-field">Unit</div>
+                    <div class="feature-detail-metadatum-value">
+                        <a href="${this.mv.faceter.buildFilterLink('Unit', map.military_unit.id, false, targetPage)}"${targetPage ? ' target="_blank"' : ''}>${map.military_unit.name}</a>
+                    </div>
                 </div>
                 ` : ''}
                 <!-- events -->
@@ -134,6 +155,20 @@ class Detailer {
                     <div class="feature-detail-metadatum-value">${places.join('\n')}</div>
                 </div>
                 ` : ''}
+                ${ metadataPane === null && artists.length ? `
+                <!-- artists -->
+                <div class="feature-detail-metadatum">
+                    <div class="feature-detail-metadatum-field">Artists</div>
+                    <div class="feature-detail-metadatum-value">${artists.join('\n')}</div>
+                </div>
+                ` : '' }
+                ${ metadataPane === null && printers.length ? `
+                <!-- printers -->
+                <div class="feature-detail-metadatum">
+                    <div class="feature-detail-metadatum-field">Printers</div>
+                    <div class="feature-detail-metadatum-value">${printers.join('\n')}</div>
+                </div>
+                ` : '' }
             `)
 
             if (metadataPane === null) {
