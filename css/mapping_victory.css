@@ -104,6 +104,9 @@ header.boilerplate .header-links {
     padding-left: 15px;
     width: 65vw;
 }
+.page-section-content a:not(.link-button) {
+    color: #4d82a1;
+}
 dl { margin-top: 0; }
 dl dt { font-weight: bold; }
 dl dd { margin-bottom: 10px; }
