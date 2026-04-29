@@ -32,7 +32,10 @@
     </div>
 </header>
 <main class="internal">
-    <h2 id="map-title"></h2>
+    <div id="map-header">
+        <h2 id="map-title"></h2>
+        <a id="map-cite-button" href="#map-citation-div" class="link-button">Cite this</a>
+    </div>
     <div class="map-detail-viewer">
         <div id="metadata-div">
 
@@ -167,6 +170,25 @@
 
                         // FEATURES
                         makeFeatures(metaDiv)
+
+                        // CITATION
+                        let mapLink = `https://mappingvictory.org/map.html?map-id=${map.id}`
+                        appendToEl(metaDiv, `
+                            <div id="map-citation-div" class="feature-detail-metadatum">
+                                <div class="feature-detail-metadatum-field white-bg">Citation</div>
+                                <div class="feature-detail-metadatum-value white-bg">
+                                    "${map.title}," <i>Mapping Victory</i>, Courtesy of Cooper K. Ragan Military Collection,
+                                    Cushing Memorial Library and Archives, Texas A&M University,
+                                    <a href="${mapLink}">${mapLink}</a>.
+                            </div>
+                        `)
+
+                        // check to see if the citation was targeted in the initial URL
+                        if (window.location.hash === '#map-citation-div') {
+                            let citationDiv = getEl('map-citation-div')
+                            citationDiv.scrollIntoView()
+                            citationDiv.classList.add('emphasize')
+                        }
                     })
                 }
             })

@@ -314,6 +314,11 @@ h1 {
     padding: 5px 10px;
     font-size: 15px;
     text-align: center;
+    text-wrap-mode: nowrap;
+}
+.link-button.white {
+    background-color: #ecede4;
+    color: #242119;
 }
 
 #galleries {
@@ -493,12 +498,19 @@ main.boilerplate { background-color: #e9ddc6; }
     min-height: 100%;
 }
 
+#map-header {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+}
 #map-title {
     font-family: "new-order", sans-serif;
     font-weight: 500;
     font-style: normal;
     font-size: 48px;
+    flex: 1;
 }
+#map-cite-button { margin-top: 40px; font-size: 18px; }
 
 #metadata-div {
     font-family: "new-order", sans-serif;
@@ -558,6 +570,27 @@ main.boilerplate { background-color: #e9ddc6; }
     position: relative;
     left: 36px;
     margin-bottom: 36px;
+}
+
+@keyframes highlight-fade {
+    0%   { background-color: #eb5534; }
+    100% { background-color: transparent; }
+}
+#map-citation-div:target, #map-citation-div.emphasize {
+    animation: highlight-fade 1.5s ease-in-out;
+}
+#map-citation-div {
+    padding: 16px;
+    background-color: #cfd1c0;
+    border-radius: 20px;
+}
+#map-citation-div .feature-detail-metadatum-value {
+    display: block;
+    font-size: 16px;
+}
+#map-citation-div a {
+    word-break: break-all;
+    text-decoration: underline;
 }
 
 #footer {

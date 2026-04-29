@@ -173,12 +173,16 @@ class Detailer {
 
             if (metadataPane === null) {
                 let fullURL = new URL('map.html', window.location.href)
+                let titleEl = getEl('feature-detail-title')
                 fullURL.search = ''
                 this.mv.faceter.createShareButton(
-                    getEl('feature-detail-title'),
+                    titleEl,
                     `${fullURL.href}?map-id=${feature.map.id}&feature-id=${feature.id}`,
                     'icon-share-white'
                 )
+                appendToEl(titleEl, `
+                    <a href="${fullURL.href}?map-id=${feature.map.id}#map-citation-div" class="link-button white">Cite this</a>
+                `)
 
                 this.dragon = OpenSeadragon({
                     id: 'feature-detail-dragon-pane',
