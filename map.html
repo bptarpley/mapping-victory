@@ -209,13 +209,15 @@
             let colorClasses = ['yellow', 'red', 'blue']
 
             features.forEach((feature, featureCount) => {
-                let colorClass = colorClasses[featureCount % colorClasses.length]
-                let d = extractFeatureDimensions(feature.image_url)
 
-                // sanity check
-                if (d.width > 0) {
-                    // create feature link
-                    appendToEl(featureDiv, `
+                if (feature.image_url) {
+                    let colorClass = colorClasses[featureCount % colorClasses.length]
+                    let d = extractFeatureDimensions(feature.image_url)
+
+                    // sanity check
+                    if (d.width > 0) {
+                        // create feature link
+                        appendToEl(featureDiv, `
                         <a href="#" id="feature-link-${feature.id}" class="feature-link clickable-feature"
                             data-id="${feature.id}"
                             data-uri="${d.uri}"
@@ -228,28 +230,32 @@
                         <div id="feature-metadata-pane-${feature.id}" class="feature-metadata-pane"></div>
                     `)
 
-                    // create overlay
-                    let imageRect = new OpenSeadragon.Rect(
-                        d.x,
-                        d.y,
-                        d.width,
-                        d.height
-                    )
-                    let viewportRect = dragon.viewport.imageToViewportRectangle(imageRect)
+                        // create overlay
+                        let imageRect = new OpenSeadragon.Rect(
+                            d.x,
+                            d.y,
+                            d.width,
+                            d.height
+                        )
+                        let viewportRect = dragon.viewport.imageToViewportRectangle(imageRect)
 
-                    let overlay = document.createElement('div')
-                    overlay.id = `feature-overlay-${feature.id}`
-                    overlay.dataset.id = feature.id
-                    overlay.dataset.uri = d.uri
-                    overlay.dataset.x = d.x
-                    overlay.dataset.y = d.y
-                    overlay.dataset.width = d.width
-                    overlay.dataset.height = d.height
-                    overlay.classList.add('feature-overlay')
-                    overlay.classList.add(colorClass)
-                    overlay.classList.add('disabled')
+                        let overlay = document.createElement('div')
+                        overlay.id = `feature-overlay-${feature.id}`
+                        overlay.dataset.id = feature.id
+                        overlay.dataset.uri = d.uri
+                        overlay.dataset.x = d.x
+                        overlay.dataset.y = d.y
+                        overlay.dataset.width = d.width
+                        overlay.dataset.height = d.height
+                        overlay.classList.add('feature-overlay')
+                        overlay.classList.add(colorClass)
+                        overlay.classList.add('disabled')
 
-                    dragon.addOverlay({ element: overlay, location: viewportRect })
+                        dragon.addOverlay({element: overlay, location: viewportRect})
+                    }
+                } else {
+                    console.log("This feature doesn't have a valid image url:")
+                    console.log(feature)
                 }
             })
 
@@ -290,7 +296,6 @@
 
             // HANDLE A FEATURE ID BEING PASSED IN AS GET PARAM
             if (mv.urlParams.has('feature-id')) {
-                console.log('hello?')
                 let featureID = mv.urlParams.get('feature-id')
                 let featureLink = getEl(`feature-link-${featureID}`)
                 let featureMetaDiv = getEl(`feature-metadata-pane-${featureID}`)
