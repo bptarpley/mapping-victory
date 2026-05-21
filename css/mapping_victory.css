@@ -527,6 +527,11 @@ main.boilerplate { background-color: #e9ddc6; }
     width: 100%;
 }
 
+.ephemera-image { margin: auto; }
+.ephemera-image:not(.selected) { cursor: pointer; }
+.ephemera-image:not(.selected):hover { border: solid 3px #4d82a1; }
+.ephemera-image.selected { border: solid 3px #eb5534; }
+
 #dragon-div {
     position: sticky;
     top: 0;

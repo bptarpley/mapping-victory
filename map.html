@@ -66,6 +66,8 @@
         dragon: null,
         detailer: null,
         mapID: null,
+        currentImageURI: null,
+        dragonOpenCallback: null,
         urlParams: new URLSearchParams(window.location.search),
 
     }
@@ -85,11 +87,46 @@
                 let map = mv.corpus.getContent('Map', mv.mapID)
                 if (map) {
                     let metaDiv = getEl('metadata-div')
+                    mv.currentImageURI = map.iiif_url
                     mv.detailer = new Detailer('#map-div')
                     mv.faceter = new Faceter(null)
 
                     // title
                     getEl('map-title').innerHTML = map.title
+
+                    // ephemera
+                    if (map.ephemera?.length) {
+                        let images = []
+                        let imageWidth = parseInt(metaDiv.clientWidth - 10)
+
+                        map.ephemera.unshift(map.iiif_url)
+                        map.ephemera.forEach(imageURI => {
+                            let imageURL = `${imageURI}/full/${imageWidth},/0/default.jpg`
+
+                            images.push(`
+                                <img class="ephemera-image${ imageURI === mv.currentImageURI ? ' selected' : '' }" src="${imageURL}" data-uri=${imageURI} />
+                            `)
+                        })
+
+                        appendToEl(metaDiv, `
+                            <div class="feature-detail-metadatum">
+                                <div class="feature-detail-metadatum-field white-bg">Images</div>
+                                <div class="feature-detail-metadatum-value white-bg">${images.join('\n')}</div>
+                            </div>
+                        `)
+
+                        forElsMatching('.ephemera-image', (ephemeraImage) => {
+                            ephemeraImage.addEventListener('click', (e) => {
+                                if (e.target.dataset.uri !== mv.currentImageURI) {
+                                    getElWithQuery('.ephemera-image.selected').classList.remove('selected')
+                                    showDragonImage(e.target.dataset.uri, () => {
+                                        makeFeatures(null)
+                                    })
+                                    e.target.classList.add('selected')
+                                }
+                            })
+                        })
+                    }
 
                     // description
                     if (map.description) {
@@ -153,7 +190,6 @@
                     mv.dragon = OpenSeadragon({
                         id: 'dragon-div',
                         prefixUrl: 'js/openseadragon/images/',
-                        tileSources: `${map.iiif_url}/info.json`,
                     })
                     mv.dragon.addHandler('open', () => {
                         const tiledImage = mv.dragon.world.getItemAt(0)
@@ -167,6 +203,15 @@
                         const centerY = imageBounds.y + viewportHeight / 2
 
                         mv.dragon.viewport.panTo(new OpenSeadragon.Point(centerX, centerY), true)
+
+                        if (mv.dragonOpenCallback !== null) {
+                            mv.dragonOpenCallback()
+                            mv.dragonOpenCallback = null
+                        }
+                    })
+
+                    // actually show the map now
+                    showDragonImage(map.iiif_url, () => {
 
                         // FEATURES
                         makeFeatures(metaDiv)
@@ -189,21 +234,40 @@
                             citationDiv.scrollIntoView()
                             citationDiv.classList.add('emphasize')
                         }
+
+                        // HANDLE A FEATURE ID BEING PASSED IN AS GET PARAM
+                        if (mv.urlParams.has('feature-id')) {
+                            let featureID = mv.urlParams.get('feature-id')
+                            let featureLink = getEl(`feature-link-${featureID}`)
+                            let featureMetaDiv = getEl(`feature-metadata-pane-${featureID}`)
+                            window.mv.detailer.showFeatureDetails(featureLink, featureMetaDiv)
+                        }
                     })
                 }
             })
         }
     })
 
+    // this function is used to initially show the map but also to switch between
+    // images should the map have ephemera
+    function showDragonImage(imageURI, callback) {
+        mv.currentImageURI = imageURI
+        mv.dragonOpenCallback = callback
+        mv.dragon.open(`${imageURI}/info.json`)
+    }
+
     function makeFeatures(metaDiv) {
         let features = mv.corpus.getAssociatedContents('Map', mv.mapID, 'Feature')
         if (features.length) {
-            appendToEl(metaDiv, `
-                <div class="feature-detail-metadatum values-below">
-                    <div class="feature-detail-metadatum-field white-bg">Features</div>
-                    <div id="feature-div" class="feature-detail-metadatum-value white-bg"></div>
-                </div>
-            `)
+            if (metaDiv !== null) {
+                appendToEl(metaDiv, `
+                    <div class="feature-detail-metadatum values-below">
+                        <div class="feature-detail-metadatum-field white-bg">Features</div>
+                        <div id="feature-div" class="feature-detail-metadatum-value white-bg"></div>
+                    </div>
+                `)
+            }
+
             let featureDiv = getEl('feature-div')
             let dragon = window.mv.dragon
             let colorClasses = ['yellow', 'red', 'blue']
@@ -217,41 +281,45 @@
                     // sanity check
                     if (d.width > 0) {
                         // create feature link
-                        appendToEl(featureDiv, `
-                        <a href="#" id="feature-link-${feature.id}" class="feature-link clickable-feature"
-                            data-id="${feature.id}"
-                            data-uri="${d.uri}"
-                            data-x="${d.x}"
-                            data-y="${d.y}"
-                            data-width="${d.width}"
-                            data-height="${d.height}">
-                                ${feature.label}
-                        </a>
-                        <div id="feature-metadata-pane-${feature.id}" class="feature-metadata-pane"></div>
-                    `)
+                        if (metaDiv !== null) {
+                            appendToEl(featureDiv, `
+                                <a href="#" id="feature-link-${feature.id}" class="feature-link clickable-feature"
+                                    data-id="${feature.id}"
+                                    data-uri="${d.uri}"
+                                    data-x="${d.x}"
+                                    data-y="${d.y}"
+                                    data-width="${d.width}"
+                                    data-height="${d.height}">
+                                        ${feature.label}
+                                </a>
+                                <div id="feature-metadata-pane-${feature.id}" class="feature-metadata-pane"></div>
+                            `)
+                        }
 
                         // create overlay
-                        let imageRect = new OpenSeadragon.Rect(
-                            d.x,
-                            d.y,
-                            d.width,
-                            d.height
-                        )
-                        let viewportRect = dragon.viewport.imageToViewportRectangle(imageRect)
+                        if (d.uri === mv.currentImageURI) {
+                            let imageRect = new OpenSeadragon.Rect(
+                                d.x,
+                                d.y,
+                                d.width,
+                                d.height
+                            )
+                            let viewportRect = dragon.viewport.imageToViewportRectangle(imageRect)
 
-                        let overlay = document.createElement('div')
-                        overlay.id = `feature-overlay-${feature.id}`
-                        overlay.dataset.id = feature.id
-                        overlay.dataset.uri = d.uri
-                        overlay.dataset.x = d.x
-                        overlay.dataset.y = d.y
-                        overlay.dataset.width = d.width
-                        overlay.dataset.height = d.height
-                        overlay.classList.add('feature-overlay')
-                        overlay.classList.add(colorClass)
-                        overlay.classList.add('disabled')
+                            let overlay = document.createElement('div')
+                            overlay.id = `feature-overlay-${feature.id}`
+                            overlay.dataset.id = feature.id
+                            overlay.dataset.uri = d.uri
+                            overlay.dataset.x = d.x
+                            overlay.dataset.y = d.y
+                            overlay.dataset.width = d.width
+                            overlay.dataset.height = d.height
+                            overlay.classList.add('feature-overlay')
+                            overlay.classList.add(colorClass)
+                            overlay.classList.add('disabled')
 
-                        dragon.addOverlay({element: overlay, location: viewportRect})
+                            dragon.addOverlay({element: overlay, location: viewportRect})
+                        }
                     }
                 } else {
                     console.log("This feature doesn't have a valid image url:")
@@ -260,28 +328,39 @@
             })
 
             // rig up click events for features
-            forElsMatching('.clickable-feature', (featureEl) => {
-                featureEl.addEventListener('mouseenter', (e) => {
-                    let featureID = e.target.dataset.id
-                    let overlay = getEl('feature-overlay-' + featureID)
-                    if (overlay) {
-                        overlay.classList.remove('disabled')
-                    }
-                })
+            if (metaDiv !== null) {
+                forElsMatching('.clickable-feature', (featureEl) => {
+                    featureEl.addEventListener('mouseenter', (e) => {
+                        if (e.target.dataset.uri === mv.currentImageURI) {
+                            let featureID = e.target.dataset.id
+                            let overlay = getEl('feature-overlay-' + featureID)
+                            if (overlay) {
+                                overlay.classList.remove('disabled')
+                            }
+                        }
+                    })
 
-                featureEl.addEventListener('mouseleave', (e) => {
-                    let featureID = e.target.dataset.id
-                    let overlay = getEl('feature-overlay-' + featureID)
-                    if (overlay) {
-                        overlay.classList.add('disabled')
-                    }
-                })
+                    featureEl.addEventListener('mouseleave', (e) => {
+                        let featureID = e.target.dataset.id
+                        let overlay = getEl('feature-overlay-' + featureID)
+                        if (overlay) {
+                            overlay.classList.add('disabled')
+                        }
+                    })
 
-                featureEl.addEventListener('click', (e) => {
-                    window.mv.detailer.showFeatureDetails(e.target, getEl(`feature-metadata-pane-${e.target.dataset.id}`))
-                    e.preventDefault()
+                    featureEl.addEventListener('click', (e) => {
+                        // switch to new image if necessary
+                        if (e.target.dataset.uri !== mv.currentImageURI) {
+                            showDragonImage(e.target.dataset.uri, ()  => {
+                                makeFeatures(null)
+                                window.mv.detailer.showFeatureDetails(e.target, getEl(`feature-metadata-pane-${e.target.dataset.id}`))
+                            })
+                        } else window.mv.detailer.showFeatureDetails(e.target, getEl(`feature-metadata-pane-${e.target.dataset.id}`))
+
+                        e.preventDefault()
+                    })
                 })
-            })
+            }
 
             forElsMatching('.feature-overlay', (overlay) => {
                 let mouseTracker = new OpenSeadragon.MouseTracker({
@@ -293,14 +372,6 @@
                     }
                 })
             })
-
-            // HANDLE A FEATURE ID BEING PASSED IN AS GET PARAM
-            if (mv.urlParams.has('feature-id')) {
-                let featureID = mv.urlParams.get('feature-id')
-                let featureLink = getEl(`feature-link-${featureID}`)
-                let featureMetaDiv = getEl(`feature-metadata-pane-${featureID}`)
-                window.mv.detailer.showFeatureDetails(featureLink, featureMetaDiv)
-            }
         }
     }
 
