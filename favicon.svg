@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="1000" height="1000"><g clip-path="url(#SvgjsClipPath1041)"><rect width="1000" height="1000" fill="#ecede4"></rect><g transform="matrix(3.3856701510855305,0,0,3.3856701510855305,100,279.76215667188626)"><svg xmlns="http://www.w3.org/2000/svg" version="1.1" id="Layer_1" viewBox="0 0 236.29 130.1" width="236.29" height="130.1"><defs>
+    <style>
+      .st0 {
+        fill: #4d82a1;
+      }
+
+      .st1 {
+        fill: #eb5534;
+      }
+
+      .st2 {
+        fill: #fcc63a;
+      }
+    </style>
+  <clipPath id="SvgjsClipPath1041"><rect width="1000" height="1000" x="0" y="0" rx="350" ry="350"></rect></clipPath></defs><g>
+    <polygon class="st0" points="48.65 0 56.09 0 7.43 130.1 0 130.1 48.65 0"></polygon>
+    <polygon class="st0" points="63.52 0 70.96 0 22.3 130.1 14.87 130.1 63.52 0"></polygon>
+    <polygon class="st0" points="78.39 0 85.82 0 37.17 130.1 29.74 130.1 78.39 0"></polygon>
+  </g><g>
+    <polygon class="st2" points="187.64 0 180.2 0 228.86 130.1 236.29 130.1 187.64 0"></polygon>
+    <polygon class="st2" points="172.77 0 165.33 0 213.99 130.1 221.42 130.1 172.77 0"></polygon>
+    <polygon class="st2" points="157.9 0 150.47 0 199.12 130.1 206.56 130.1 157.9 0"></polygon>
+  </g><path class="st1" d="M138.81,130.1h-41.5L48.65,0h41.5l29.12,84.41L148.93,0h38.71l-48.83,130.1Z"></path></svg></g></g></svg>
