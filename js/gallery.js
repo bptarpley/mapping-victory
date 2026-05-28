@@ -108,13 +108,11 @@ class Gallery {
         if (maxImageHeight < maxImageWidth) imgSizeSpec = `,${requestedHeight}`
 
         if (this.contentType === 'Feature') regionSpec = `${pane.dataset.x},${pane.dataset.y},${pane.dataset.width},${pane.dataset.height}`
-        else if (this.contentType === 'Map' && maxImageHeight > maxImageWidth) {
-            //let ratio = maxImageWidth / requestedWidth
-            //let regionHeight = parseInt(ratio * requestedHeight)
 
-            //regionSpec = `0,0,${maxImageWidth},${regionHeight}`
+        /* //uncomment to allow for rotation of portrait oriented maps
+        else if (this.contentType === 'Map' && maxImageHeight > maxImageWidth) {
             rotation = 270
-        }
+        }*/
 
         let imgSrc = `${pane.dataset.uri}/${regionSpec}/${imgSizeSpec}/${rotation}/default.jpg`
 
