@@ -225,6 +225,16 @@
 
                         // CITATION
                         let mapLink = `https://mappingvictory.org/map.html?map-id=${map.id}`
+                        let libraryLink = ``
+
+                        if (map.library_url) {
+                            libraryLink = `
+                                <div class="feature-detail-metadatum" style="align-items: start;">
+                                    <a href="${map.library_url}" target="_blank" class="link-button" style="margin-bottom: 20px;">TAMU Library Holding</a>
+                                </div>
+                            `
+                        }
+
                         appendToEl(metaDiv, `
                             <div id="map-citation-div" class="feature-detail-metadatum">
                                 <div class="feature-detail-metadatum-field white-bg">Citation</div>
@@ -232,7 +242,9 @@
                                     "${map.title}," <i>Mapping Victory</i>, Courtesy of Cooper K. Ragan Military Collection,
                                     Cushing Memorial Library and Archives, Texas A&M University,
                                     <a href="${mapLink}">${mapLink}</a>.
+                                </div>
                             </div>
+                            ${ libraryLink.length ? libraryLink : '' }
                         `)
 
                         // check to see if the citation was targeted in the initial URL
