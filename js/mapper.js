@@ -18,7 +18,7 @@ class Mapper {
                 if (this.map !== null) this.map.remove()
                 this.map = L.map(mapDiv)
                 L.tileLayer(
-                    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+                    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=cb1_2nwr_1_7941c81997287d52ecbe1587',
                     {
                         maxZoom: 19,
                         noWrap: true
