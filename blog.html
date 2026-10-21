@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapping Victory</title>
+
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Mapping Victory" />
+
+    <link rel="stylesheet" href="https://use.typekit.net/jjk5ixf.css">
+    <link type="text/css" rel="stylesheet" href="css/mapping_victory.css">
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-N8BKS9LQSR"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-N8BKS9LQSR');
+    </script>
+</head>
+<body class="boilerplate">
+<!-- SVG Graphics -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+    <symbol id="icon-close" viewBox="0 0 16 16">
+        <line x1="4" y1="4" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="12" y1="4" x2="4" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-share" viewBox="0 0 35.74 35.74">
+        <circle cx="17.87" cy="17.87" r="17.87" fill="#292419"/>
+        <g>
+            <path d="M25.6,14.01c-.43,0-.77.35-.77.77v10.05h-13.91v-10.05c0-.43-.35-.77-.77-.77s-.77.35-.77.77v10.82c0,.43.35.77.77.77h15.46c.43,0,.77-.35.77-.77v-10.82c0-.43-.35-.77-.77-.77Z" fill="#eeeee6" stroke="#eeeee6" stroke-miterlimit="10" stroke-width=".5px"/>
+            <path d="M15.32,13.78l1.77-1.77v8.18c0,.43.35.77.77.77s.77-.35.77-.77v-8.18l1.77,1.77c.15.15.35.23.55.23s.4-.08.55-.23c.3-.3.3-.79,0-1.09l-3.09-3.09c-.3-.3-.79-.3-1.09,0l-3.09,3.09c-.3.3-.3.79,0,1.09.3.3.79.3,1.09,0h0Z" fill="#eeeee6" stroke="#eeeee6" stroke-miterlimit="10" stroke-width=".5px"/>
+        </g>
+    </symbol>
+</svg>
+
+<header class="boilerplate">
+    <div class="header-links">
+        <a href="about.html">About</a>
+        <a href="index.html">Gallery</a>
+    </div>
+</header>
+
+<main id="post-holder" class="boilerplate">
+    <div class="boilerplate-page-section">
+        <div class="page-section-header">
+            Blog
+        </div>
+        <div class="page-section-content">
+            <div id="logo-container">
+                <a href="index.html"><img src="images/logo.svg" alt="Mapping Victory: U.S. Army Souvenir Maps from the European Theater of Operations, 1944-46"></a>
+            </div>
+        </div>
+    </div>
+
+
+</main>
+<footer id="footer">
+</footer>
+
+<script src="js/openseadragon/openseadragon.min.js"></script>
+<script src="js/leaflet/leaflet.js"></script>
+<script src="js/markercluster/leaflet.markercluster.js"></script>
+<script src="js/utilities.js"></script>
+<script src="js/corpus.js"></script>
+<script src="js/faceter.js"></script>
+<script src="js/detailer.js"></script>
+<script src="js/map-feature.js"></script>
+
+<script language="javascript">
+    window.mv = {
+        corporaHost: 'https://corpora.library.tamu.edu',
+        corpusID: '66d0cf276083e79367c617c6',
+        corpus: null,
+        faceter: null,
+        dragon: null,
+        detailer: null,
+        mapID: null,
+        urlParams: new URLSearchParams(window.location.search),
+
+    }
+    window.mv['api'] = `${mv.corporaHost}/api/corpus/${mv.corpusID}`
+
+    // load footer
+    getEl('footer').innerHTML = mvTemplates.footer()
+
+    // MAIN ENTRY POINT
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch(`${window.mv.api}/BlogPost/?s_publication_date=desc`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.records) {
+                let postHolder = getEl('post-holder')
+
+                data.records.forEach(post => {
+                    appendToEl(postHolder, `
+                        <section class="boilerplate-page-section blog-post">
+                            <div class="page-section-header">${formatShortDate(post.publication_date)}</div>
+                            <div class="page-section-content">
+                                <h2>${post.title}</h2>
+                                ${post.content}
+                            </div>
+                        </section>
+                    `)
+                })
+            }
+        })
+    })
+
+</script>
+</body>
+</html>
