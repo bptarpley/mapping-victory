@@ -122,8 +122,15 @@ header.boilerplate .header-links {
     line-height: 1;
     margin-top: -0.15em;
 }
-.blog-post:last-child {
+.blog-post:last-child,
+.blog-pager {
     margin-bottom: 60px;
+}
+.blog-pager .page-section-content {
+    display: flex;
+}
+.blog-pager-newer {
+    margin-left: auto;
 }
 dl { margin-top: 0; }
 dl dt { font-weight: bold; }

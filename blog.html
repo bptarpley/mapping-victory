@@ -76,13 +76,10 @@
     window.mv = {
         corporaHost: 'https://corpora.library.tamu.edu',
         corpusID: '66d0cf276083e79367c617c6',
-        corpus: null,
-        faceter: null,
-        dragon: null,
-        detailer: null,
-        mapID: null,
         urlParams: new URLSearchParams(window.location.search),
-
+        blogPage: 1,
+        blogPageSize: 5,
+        totalBlogPosts: 0
     }
     window.mv['api'] = `${mv.corporaHost}/api/corpus/${mv.corpusID}`
 
@@ -91,10 +88,16 @@
 
     // MAIN ENTRY POINT
     document.addEventListener('DOMContentLoaded', function() {
-        fetch(`${window.mv.api}/BlogPost/?s_publication_date=desc`)
-        .then(res => res.json())
-        .then(data => {
-            if (data.records) {
+        mv.blogPage = mv.urlParams.get('blog-page')
+        if (!mv.blogPage) mv.blogPage = 1
+
+        callAPI(`${mv.api}/BlogPost/`, {
+            'page-size': mv.blogPageSize,
+            'page': mv.blogPage,
+            's_publication_date': 'desc'
+        }, data => {
+            if (data.meta && data.records) {
+                mv.totalBlogPosts = data.meta.total
                 let postHolder = getEl('post-holder')
 
                 data.records.forEach(post => {
@@ -108,9 +111,29 @@
                         </section>
                     `)
                 })
+
+                renderBlogPager()
             }
         })
     })
+
+    function renderBlogPager() {
+        let page = parseInt(mv.blogPage) || 1
+        let hasOlder = page * mv.blogPageSize < mv.totalBlogPosts
+        let hasNewer = page > 1
+
+        if (hasOlder || hasNewer) {
+            appendToEl(getEl('post-holder'), `
+                <nav class="boilerplate-page-section blog-pager">
+                    <div class="page-section-header no-border"></div>
+                    <div class="page-section-content">
+                        ${hasOlder ? `<a href="blog.html?blog-page=${page + 1}" class="link-button blog-pager-older">Older Posts</a>` : ''}
+                        ${hasNewer ? `<a href="blog.html?blog-page=${page - 1}" class="link-button blog-pager-newer">Newer Posts</a>` : ''}
+                    </div>
+                </nav>
+            `)
+        }
+    }
 
 </script>
 </body>
