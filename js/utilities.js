@@ -157,6 +157,13 @@ function parseDate(timestamp) {
         year: 'numeric'
     })
 }
+function formatShortDate(timestamp) {
+    // MM-DD-YYYY; UTC getters keep date-only values from shifting a day in US time zones
+    let date = new Date(timestamp)
+    let month = String(date.getUTCMonth() + 1).padStart(2, '0')
+    let day = String(date.getUTCDate()).padStart(2, '0')
+    return `${month}.${day}.${date.getUTCFullYear()}`
+}
 function extractFeatureDimensions(imgURL) {
     const match = imgURL.match(/(.*)\/([^\/]*)\/[^\/]*,[^\/]*\/0\/default.jpg$/)
 

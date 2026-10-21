@@ -117,6 +117,14 @@ header.boilerplate .header-links {
 .page-section-content a:not(.link-button) {
     color: #4d82a1;
 }
+.blog-post .page-section-content > h2:first-child {
+    /* pull the cap height of the title up to the top of the date's border */
+    line-height: 1;
+    margin-top: -0.15em;
+}
+.blog-post:last-child {
+    margin-bottom: 60px;
+}
 dl { margin-top: 0; }
 dl dt { font-weight: bold; }
 dl dd { margin-bottom: 10px; }
