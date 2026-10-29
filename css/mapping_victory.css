@@ -72,13 +72,10 @@ a.logo { text-decoration: none; }
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    width: 150px;
-}
-
-header.boilerplate .header-links {
     margin-left: auto;
-    padding: 10px 10px 0 0;
+    padding: 10px 20px 0 0;
     text-align: right;
+    width: 200px;
 }
 
 .boilerplate-page-section {
@@ -136,12 +133,6 @@ dl { margin-top: 0; }
 dl dt { font-weight: bold; }
 dl dd { margin-bottom: 10px; }
 
-.gallery-page .header-links {
-    padding-top: 10px;
-    padding-right: 10px;
-    margin-left: auto;
-    width: 150px;
-}
 .header-links a {
     color: #242119;
     text-align: center;
