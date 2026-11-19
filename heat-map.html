@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapping Victory</title>
+
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Mapping Victory" />
+
+    <link rel="stylesheet" href="https://use.typekit.net/jjk5ixf.css">
+    <link rel="stylesheet" href="js/leaflet/leaflet.css">
+    <link rel="stylesheet" href="js/markercluster/MarkerCluster.css">
+    <link type="text/css" rel="stylesheet" href="css/mapping_victory.css">
+
+    <style>
+        #heat-map {
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* Row beneath the map: a narrow unit list on the left, the feature
+           gallery on the right. Colors and the dark 36px gutter mirror the
+           filter/gallery layout on index.html. */
+        #heat-explorer {
+            display: grid;
+            grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+            gap: 36px;
+            height: 100vh;
+            background-color: #242119;
+            border-top: solid 36px #242119;
+            border-bottom: solid 36px #242119;
+        }
+        #unit-column, #feature-gallery-column {
+            box-sizing: border-box;
+            height: 100vh;
+            padding: 20px;
+            overflow: hidden;   /* the lists inside scroll, not the columns */
+        }
+        #unit-column { background-color: #ecede4; }
+        #feature-gallery-column { background-color: #e9ddc6; }
+
+        /* index.html caps facet lists at 40vh; here the unit list gets the
+           whole column. */
+        #unit-column .facet-list { margin-bottom: 0; height: 100%; }
+        #unit-column .facet-list-content { max-height: 100%; width: 100%; }
+        #unit-column .facet-list-content a.selected { font-weight: 700; text-decoration: underline; }
+        #unit-clear-link { font-style: italic; }
+
+        /* Let the gallery fill its column instead of the default 100vh. */
+        #feature-gallery-column .gallery { max-height: 100%; margin-bottom: 0; }
+        #gallery-loading { font-family: "new-order", sans-serif; color: #242119; }
+    </style>
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-N8BKS9LQSR"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-N8BKS9LQSR');
+    </script>
+</head>
+<body class="internal">
+<!-- SVG Graphics -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+    <symbol id="icon-close" viewBox="0 0 16 16">
+        <line x1="4" y1="4" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="12" y1="4" x2="4" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-share" viewBox="0 0 35.74 35.74">
+        <circle cx="17.87" cy="17.87" r="17.87" fill="#292419"/>
+        <g>
+            <path d="M25.6,14.01c-.43,0-.77.35-.77.77v10.05h-13.91v-10.05c0-.43-.35-.77-.77-.77s-.77.35-.77.77v10.82c0,.43.35.77.77.77h15.46c.43,0,.77-.35.77-.77v-10.82c0-.43-.35-.77-.77-.77Z" fill="#eeeee6" stroke="#eeeee6" stroke-miterlimit="10" stroke-width=".5px"/>
+            <path d="M15.32,13.78l1.77-1.77v8.18c0,.43.35.77.77.77s.77-.35.77-.77v-8.18l1.77,1.77c.15.15.35.23.55.23s.4-.08.55-.23c.3-.3.3-.79,0-1.09l-3.09-3.09c-.3-.3-.79-.3-1.09,0l-3.09,3.09c-.3.3-.3.79,0,1.09.3.3.79.3,1.09,0h0Z" fill="#eeeee6" stroke="#eeeee6" stroke-miterlimit="10" stroke-width=".5px"/>
+        </g>
+    </symbol>
+    <!-- used by the share button in Detailer's feature modal -->
+    <symbol id="icon-share-white" viewBox="0 0 35.74 35.74">
+        <circle cx="17.87" cy="17.87" r="17.87" fill="#eeeee6"/>
+        <g>
+            <path d="M25.6,14.01c-.43,0-.77.35-.77.77v10.05h-13.91v-10.05c0-.43-.35-.77-.77-.77s-.77.35-.77.77v10.82c0,.43.35.77.77.77h15.46c.43,0,.77-.35.77-.77v-10.82c0-.43-.35-.77-.77-.77Z" fill="#292419" stroke="#292419" stroke-miterlimit="10" stroke-width=".5px"/>
+            <path d="M15.32,13.78l1.77-1.77v8.18c0,.43.35.77.77.77s.77-.35.77-.77v-8.18l1.77,1.77c.15.15.35.23.55.23s.4-.08.55-.23c.3-.3.3-.79,0-1.09l-3.09-3.09c-.3-.3-.79-.3-1.09,0l-3.09,3.09c-.3.3-.3.79,0,1.09.3.3.79.3,1.09,0h0Z" fill="#292419" stroke="#292419" stroke-miterlimit="10" stroke-width=".5px"/>
+        </g>
+    </symbol>
+</svg>
+
+<header class="internal">
+    <a href="index.html" class="logo"><h1 class="sr-only">Mapping Victory</h1></a>
+    <div class="header-links">
+        <a href="about.html">About</a>
+        <a href="index.html">Gallery</a>
+        <a href="blog.html">Blog</a>
+    </div>
+</header>
+<main class="internal">
+    <div id="heat-map"></div>
+    <div id="heat-explorer">
+        <!-- filled with the unit list once the corpus has loaded -->
+        <div id="unit-column"></div>
+        <!-- Detailer's feature modal and the Gallery are both added here -->
+        <div id="feature-gallery-column">
+            <div id="gallery-loading">Loading features…</div>
+        </div>
+    </div>
+</main>
+<footer id="footer" class="internal">
+</footer>
+
+<script src="js/openseadragon/openseadragon.min.js"></script>
+<script src="js/leaflet/leaflet.js"></script>
+<script src="js/markercluster/leaflet.markercluster.js"></script>
+<!-- popper + tippy power the "copy share link" tooltip in the feature modal -->
+<script src="js/popper.min.js"></script>
+<script src="js/tippy-bundle.umd.min.js"></script>
+<script src="js/utilities.js"></script>
+<script src="js/corpus.js"></script>
+<script src="js/faceter.js"></script>
+<script src="js/gallery.js"></script>
+<script src="js/detailer.js"></script>
+
+<script language="javascript">
+    window.mv = {
+        corporaHost: 'https://corpora.library.tamu.edu',
+        corpusID: '66d0cf276083e79367c617c6',
+        corpus: null,
+        faceter: null,
+        dragon: null,
+        detailer: null,
+        mapID: null,
+        currentImageURI: null,
+        dragonOpenCallback: null,
+        urlParams: new URLSearchParams(window.location.search),
+        galleryIDs: new Set(),   // Gallery records the IDs it renders here
+    }
+    window.mv['api'] = `${mv.corporaHost}/api/corpus/${mv.corpusID}`
+
+    // load footer
+    getEl('footer').innerHTML = mvTemplates.footer()
+
+    /* ==========================================================================
+       HEAT MAP CONFIGURATION
+       ========================================================================== */
+
+    // The geo_point field we're aggregating on. Feature.locations is a multi-valued
+    // cross-reference to Place, and each embedded Place carries its own coordinates.
+    // Note: Corpora counts every Feature→Place reference, so a Feature with three
+    // locations contributes up to three to the tile counts (the counts sum to ~8k,
+    // not the ~2.1k Features).
+    const HEAT_FIELD = 'locations.coordinates'
+
+    // How many pixels of breathing room to leave around the dataset when we
+    // zoom/center the map on load.
+    const FIT_PADDING_PX = 20
+
+    // A geotile at precision p is the same square as a slippy-map tile at zoom p.
+    // Rendered at map zoom z, it measures 256 * 2^(z - p) pixels on a side. So
+    // precision = zoom + offset gives a constant on-screen tile size:
+    //   offset 3 → 32px squares, offset 4 → 16px squares, offset 5 → 8px squares.
+    // 16px is fine-grained enough to look like a heat surface while still being
+    // big enough to hover/inspect.
+    const PRECISION_OFFSET = 4
+
+    // Elasticsearch accepts geotile precisions from 0 to 29.
+    const MIN_PRECISION = 0
+    const MAX_PRECISION = 29
+
+    // How long the map must sit still (no further zooming) before we redraw the
+    // tiles at the new precision. Without this, every step of a scroll-wheel or
+    // pinch zoom would trigger a fetch and a full redraw, which feels jumpy.
+    const REDRAW_DELAY_MS = 1000
+
+    // The site's palette, from coolest (lowest count) through the midpoint to hottest.
+    const HEAT_STOPS = ['#4d82a1', '#cba52a', '#eb5534']
+
+    // Overall opacity of the heat tiles, from 0 (invisible) to 1 (solid).
+    // This is one uniform value for every tile: it doesn't vary with a tile's
+    // count, so the colors still encode intensity on their own. Lower it to let
+    // more of the basemap (place names, borders, rivers) show through.
+    const TILE_OPACITY = 0.7
+
+
+    /* ==========================================================================
+       COLOR RAMP
+       --------------------------------------------------------------------------
+       We blend between the three stops in OKLab rather than sRGB. OKLab is a
+       perceptually uniform color space: equal numeric steps look like equal
+       visual steps, so a tile at t=0.25 looks "a quarter of the way" between
+       blue and yellow instead of lurching early or late. It costs nothing but
+       the two small conversion functions below.
+       ========================================================================== */
+
+    // sRGB channels are gamma-encoded; OKLab math must be done on linear light.
+    const srgbToLinear = v => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+    const linearToSrgb = v => v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055
+
+    // '#rrggbb' → [L, a, b] (matrices from Björn Ottosson's OKLab reference).
+    function hexToOklab(hex) {
+        const [r, g, b] = [1, 3, 5].map(i => srgbToLinear(parseInt(hex.slice(i, i + 2), 16) / 255))
+        const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
+        const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
+        const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
+        return [
+            0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+            1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+            0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s
+        ]
+    }
+
+    // [L, a, b] → '#rrggbb'. Channels are clamped to [0, 1] in case a blended
+    // color lands slightly outside the sRGB gamut.
+    function oklabToHex([L, a, b]) {
+        const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3
+        const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3
+        const s = (L - 0.0894841775 * a - 1.2914855480 * b) ** 3
+        return '#' + [
+            4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+            -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+            -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+        ].map(v => Math.round(Math.min(1, Math.max(0, linearToSrgb(v))) * 255).toString(16).padStart(2, '0')).join('')
+    }
+
+    // Convert the stops once, up front, rather than on every tile.
+    const HEAT_LAB = HEAT_STOPS.map(hexToOklab)
+
+    // t in [0, 1] → hex color. The ramp is two linear segments meeting at the
+    // midpoint: [0, 0.5] blends blue→yellow, [0.5, 1] blends yellow→red. That
+    // guarantees t=0, 0.5 and 1 land exactly on the three site colors.
+    function heatColor(t) {
+        t = Math.min(1, Math.max(0, t))
+        const [from, to, f] = t < 0.5
+            ? [HEAT_LAB[0], HEAT_LAB[1], t * 2]
+            : [HEAT_LAB[1], HEAT_LAB[2], (t - 0.5) * 2]
+        return oklabToHex(from.map((v, i) => v + (to[i] - v) * f))
+    }
+
+    // Tile counts are extremely skewed (at precision 12 the median is 1 and the
+    // max is 152), so a linear scale would paint nearly everything blue. A log
+    // scale spreads the low end out. Using log rather than log1p means a count
+    // of 1 maps to exactly t=0 (pure site blue) and the max maps to t=1 (pure
+    // red). Every bucket has at least 1, so log never sees 0; if the max is
+    // also 1 (every tile equal), we avoid dividing by log(1)=0 and use t=0.
+    function countToT(count, maxCount) {
+        return maxCount > 1 ? Math.log(count) / Math.log(maxCount) : 0
+    }
+
+
+    /* ==========================================================================
+       GEOTILE HELPERS
+       ========================================================================== */
+
+    // Map zoom → geotile precision, kept within what Elasticsearch accepts.
+    // Leaflet zoom can be fractional (e.g. after fitBounds or pinch), so round it.
+    function precisionForZoom(zoom) {
+        return Math.max(MIN_PRECISION, Math.min(MAX_PRECISION, Math.round(zoom) + PRECISION_OFFSET))
+    }
+
+    // An Elasticsearch geotile key "z/x/y" uses the same Web Mercator tile grid
+    // Leaflet uses for basemap tiles. Tile (x, y) at zoom z spans the pixel
+    // square [x*256, (x+1)*256] × [y*256, (y+1)*256] in that zoom's pixel space,
+    // so we let Leaflet's own projection turn those corners back into lat/lng.
+    function tileKeyToBounds(map, key) {
+        const [z, x, y] = key.split('/').map(Number)
+        const northWest = map.unproject(L.point(x * 256, y * 256), z)
+        const southEast = map.unproject(L.point((x + 1) * 256, (y + 1) * 256), z)
+        return L.latLngBounds(northWest, southEast)
+    }
+
+
+    /* ==========================================================================
+       PAGE STATE
+       --------------------------------------------------------------------------
+       The map, unit list and gallery all react to one another, so the bits of
+       state they share live here at the top level rather than inside closures.
+       ========================================================================== */
+
+    let map = null                  // the Leaflet map
+    let heatLayer = null            // L.layerGroup holding every heat rectangle
+    let mapReady = false            // true once the map has been fitted to the data
+    let corpusReady = false         // true once Corpus.build() has finished
+
+    let selectedUnitID = null       // Unit filtering the map + gallery (null = all units)
+    let selectedTileKey = null      // "z/x/y" of a clicked tile; null = gallery follows the viewport
+
+    // Tile aggregations keyed by "<unit or 'all'>|<precision>", so revisiting a
+    // zoom level (or re-selecting a unit) costs no extra requests.
+    const tileCache = {}
+
+    // Key of the tiles currently drawn (or being fetched). Used both to skip
+    // redundant redraws and to discard responses that arrive after the user
+    // has already zoomed somewhere else or picked a different unit.
+    let currentTileRequestKey = null
+
+    // The drawn rectangles by tile key, so a clicked tile can be outlined.
+    let tileRects = {}
+
+    // A fingerprint of what the gallery is currently showing; lets us skip
+    // rebuilding it when a map move didn't change the set of features.
+    let lastGallerySignature = null
+
+
+    /* ==========================================================================
+       UNIT FILTER → API PARAMETERS
+       ========================================================================== */
+
+    // Extra query parameters that restrict a Feature aggregation to the
+    // selected unit. Units are attached to Maps (Map.military_unit), and
+    // Features to Maps (Feature.map), so we look up the unit's Maps in the
+    // in-memory corpus graph and filter Features by those Map IDs.
+    //
+    // Corpora separates multiple values for one parameter with "__". By default
+    // multiple values are ANDed, which for a single-valued field like map.id
+    // would match nothing (a Feature can't belong to two Maps at once), so we
+    // switch the operator to OR. That operator applies to every query in the
+    // request, which is fine here because map.id is the only filter.
+    function unitFilterParams() {
+        if (!selectedUnitID) return {}
+        const mapIDs = mv.corpus.getAssociatedContents('Unit', selectedUnitID, 'Map').map(m => m.id)
+        return { 'f_map.id': mapIDs.join('__'), 'operator': 'or' }
+    }
+
+
+    /* ==========================================================================
+       HEAT TILES
+       ========================================================================== */
+
+    // Paint one aggregation's worth of tiles.
+    function drawTiles(tiles) {
+        heatLayer.clearLayers()
+        tileRects = {}
+
+        // Compute the max per aggregation rather than once globally: coarse
+        // tiles hold far bigger counts (max ~2.9k at precision 6 vs 152 at
+        // precision 12), and a single unit's counts are far smaller than the
+        // whole corpus's, so a fixed max would wash out most views.
+        const counts = Object.values(tiles)
+        if (!counts.length) return
+        const maxCount = Math.max(...counts)
+
+        for (const [key, count] of Object.entries(tiles)) {
+            const rect = L.rectangle(tileKeyToBounds(map, key), {
+                stroke: false,          // no outlines; adjacent tiles read as one surface
+                color: '#242119',       // outline color, only shown on the selected tile
+                weight: 3,
+                fillColor: heatColor(countToT(count, maxCount)),
+                fillOpacity: TILE_OPACITY  // same for every tile (see TILE_OPACITY above)
+            })
+            .bindTooltip(`${count.toLocaleString()} location reference${count === 1 ? '' : 's'}`)
+            .addTo(heatLayer)
+
+            // Clicking a tile narrows the gallery to that tile's features.
+            // stopPropagation keeps the click from also reaching the map's own
+            // click handler (which would immediately undo the selection).
+            rect.on('click', e => {
+                L.DomEvent.stopPropagation(e)
+                selectTile(key)
+            })
+
+            tileRects[key] = rect
+        }
+
+        // If the selected tile survived the redraw (same precision), re-outline it.
+        highlightSelectedTile()
+    }
+
+    // Make sure the tiles on screen match the current zoom level and unit
+    // filter, fetching them from Corpora if we haven't seen this combination.
+    function refreshTiles() {
+        const precision = precisionForZoom(map.getZoom())
+        const requestKey = `${selectedUnitID || 'all'}|${precision}`
+
+        // Nothing changed (e.g. a pan, or a zoom that rounds to the same level).
+        if (requestKey === currentTileRequestKey) return
+        currentTileRequestKey = requestKey
+
+        if (tileCache[requestKey]) {
+            drawTiles(tileCache[requestKey])
+            return
+        }
+
+        // page-size=0: we only want the aggregation in meta, not any records.
+        // a_geotile_<name>=<field>__<precision> is Corpora's geotile syntax;
+        // the result lands at meta.aggregations.<name> as {"z/x/y": count}.
+        callAPI(`${mv.api}/Feature/`, {
+            'page-size': 0,
+            'a_geotile_heat': `${HEAT_FIELD}__${precision}`,
+            ...unitFilterParams()
+        }, data => {
+            const tiles = data.meta?.aggregations?.heat || {}
+            tileCache[requestKey] = tiles
+
+            // If the user zoomed or changed units while this request was in
+            // flight, a newer refresh owns the map now; cache but don't draw.
+            if (requestKey === currentTileRequestKey) drawTiles(tiles)
+        })
+    }
+
+    // Outline the selected tile (if any) and clear the outline from the rest.
+    function highlightSelectedTile() {
+        for (const [key, rect] of Object.entries(tileRects)) {
+            rect.setStyle({ stroke: key === selectedTileKey })
+        }
+        if (selectedTileKey && tileRects[selectedTileKey]) tileRects[selectedTileKey].bringToFront()
+    }
+
+    function selectTile(key) {
+        selectedTileKey = key
+        highlightSelectedTile()
+        renderGallery()
+    }
+
+    // Ask Corpora for the bounding box of the (optionally unit-filtered)
+    // Feature locations and fit the map to it. Uses the same cheap
+    // page-size=0 trick as the tile requests.
+    function fitMapToData(onDone) {
+        callAPI(`${mv.api}/Feature/`, {
+            'page-size': 0,
+            'a_geobounds_extent': HEAT_FIELD,
+            ...unitFilterParams()
+        }, data => {
+            const extent = data.meta?.aggregations?.extent
+
+            // Leaflet caches the container's pixel size. If the page was laid
+            // out (or the tab was hidden) when that size was first measured,
+            // fitBounds would compute its zoom against a 0×0 box and jump to
+            // max zoom. Re-measuring right before fitting avoids that.
+            map.invalidateSize()
+
+            if (extent) {
+                // animate: false so getZoom()/getBounds() reflect the new view
+                // immediately when onDone runs, rather than mid-animation.
+                map.fitBounds([
+                    [extent.top_left.lat, extent.top_left.lon],
+                    [extent.bottom_right.lat, extent.bottom_right.lon]
+                ], { padding: [FIT_PADDING_PX, FIT_PADDING_PX], animate: false })
+            } else if (!mapReady) {
+                // No locations at all (or the aggregation failed) on first load:
+                // show the world so the map isn't blank and grey.
+                map.setView([20, 0], 2)
+            }
+
+            onDone()
+        })
+    }
+
+    function buildHeatMap() {
+        // preferCanvas draws vector layers onto one <canvas> instead of creating
+        // an SVG element per rectangle. We draw up to a few thousand tiles at
+        // high precision, which is far smoother on canvas.
+        map = L.map('heat-map', { preferCanvas: true })
+
+        // Keep a handle on the map in the shared site namespace so it can be
+        // inspected from the browser console while developing.
+        mv.heatMap = map
+
+        // Same CartoDB basemap used by Mapper, so the heat map matches the
+        // region maps elsewhere on the site.
+        L.tileLayer(
+            'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=cb1_2nwr_1_7941c81997287d52ecbe1587',
+            { maxZoom: 19, noWrap: true }
+        ).addTo(map)
+
+        // All heat tiles live in one group so a redraw is a single clearLayers().
+        heatLayer = L.layerGroup().addTo(map)
+
+        // Fit to the whole dataset first, and only then pick a precision. That
+        // way the initial precision is derived from whatever zoom fitBounds
+        // chose for this screen size, rather than a hard-coded guess.
+        fitMapToData(() => {
+            mapReady = true
+
+            // Draw the initial tiles right away (no delay on first paint), and
+            // the gallery too if the corpus happens to be loaded already.
+            refreshTiles()
+            renderGallery()
+
+            // From here on, keep tiles and gallery in sync with the view, but
+            // debounced: each move/zoom restarts a countdown, and only when
+            // REDRAW_DELAY_MS passes with no further movement do we refresh.
+            // moveend fires for both pans and zooms; refreshTiles ignores pans
+            // (same precision), but the viewport gallery needs them.
+            // Moving the map also drops any tile selection, returning the
+            // gallery to "everything in view".
+            // Registering this after the first fit means that fit doesn't
+            // trigger a duplicate refresh.
+            let redrawTimer = null
+            map.on('moveend', () => {
+                clearTimeout(redrawTimer)
+                redrawTimer = setTimeout(() => {
+                    refreshTiles()
+                    selectedTileKey = null
+                    highlightSelectedTile()
+                    renderGallery()
+                }, REDRAW_DELAY_MS)
+            })
+
+            // Clicking empty map (not a tile) also clears the tile selection.
+            map.on('click', () => {
+                if (selectedTileKey) selectTile(null)
+            })
+        })
+    }
+
+
+    /* ==========================================================================
+       FEATURE GALLERY
+       ========================================================================== */
+
+    // Does a [lon, lat] coordinate pair (Corpora's geo_point order) fall inside
+    // the given geotile? We project the point into pixel space at the tile's
+    // zoom level; dividing by the 256px tile size and flooring gives the tile
+    // column/row it sits in, exactly as Elasticsearch computed it.
+    function coordinateInTile(coordinates, z, x, y) {
+        const point = map.project(L.latLng(coordinates[1], coordinates[0]), z).divideBy(256).floor()
+        return point.x === x && point.y === y
+    }
+
+    // Rebuild the gallery for the clicked tile or, if none, the current viewport.
+    // Everything here is in memory: Features carry their Places' coordinates
+    // (embedded cross-references), so no API call is needed.
+    function renderGallery() {
+        // Needs both the fitted map (for bounds) and the corpus (for Features).
+        if (!mapReady || !corpusReady) return
+
+        // Start from the selected unit's Features, or every Feature. The
+        // Unit→Feature link is one of the corpus's indirect connections
+        // (Feature → Map → Unit), so it's a single lookup.
+        const candidates = selectedUnitID
+            ? mv.corpus.getAssociatedContents('Unit', selectedUnitID, 'Feature')
+            : mv.corpus.getContents('Feature')
+
+        // Pick the location test for the current mode.
+        let isRelevant
+        if (selectedTileKey) {
+            const [z, x, y] = selectedTileKey.split('/').map(Number)
+            isRelevant = coordinates => coordinateInTile(coordinates, z, x, y)
+        } else {
+            const bounds = map.getBounds()
+            isRelevant = coordinates => bounds.contains(L.latLng(coordinates[1], coordinates[0]))
+        }
+
+        // A Feature qualifies if any one of its locations passes the test.
+        // Empty fields are omitted from Corpora records, hence the ?. guards.
+        const featureIDs = new Set()
+        candidates.forEach(feature => {
+            if (feature?.locations?.some(loc => loc.coordinates && isRelevant(loc.coordinates))) {
+                featureIDs.add(feature.id)
+            }
+        })
+
+        // Skip the (comparatively expensive) DOM rebuild if nothing changed,
+        // e.g. a small pan that didn't bring any new Features into view.
+        const label = selectedTileKey ? 'Features in tile' : 'Features in view'
+        const signature = `${label}|${[...featureIDs].sort().join(',')}`
+        if (signature === lastGallerySignature) return
+        lastGallerySignature = signature
+
+        // Remove the previous gallery (and the loading message) but leave
+        // Detailer's modal, which lives in the same column, in place.
+        const column = getEl('feature-gallery-column')
+        column.querySelectorAll('.gallery, #gallery-loading').forEach(el => el.remove())
+        mv.galleryIDs.clear()
+
+        // Reuse the site's Gallery component as-is. It shows Features in the
+        // corpus's display order (by title) and lazy-loads IIIF thumbnails as
+        // panes scroll into view.
+        new Gallery(column, 'Feature', label, false, featureIDs)
+    }
+
+
+    /* ==========================================================================
+       UNIT LIST
+       ========================================================================== */
+
+    function buildUnitList() {
+        const column = getEl('unit-column')
+
+        // Only list units that can actually show something on the map: those
+        // with at least one Feature that has a located Place. The badge counts
+        // just those located Features, since that's what the map and gallery
+        // can display (only ~60% of Features have locations, and some units'
+        // Features have almost none). The corpus keeps units sorted by name.
+        const hasLocation = feature => feature?.locations?.some(loc => loc.coordinates)
+        const units = mv.corpus.getContents('Unit')
+            .map(unit => ({
+                unit,
+                count: mv.corpus.getAssociatedContents('Unit', unit.id, 'Feature').filter(hasLocation).length
+            }))
+            .filter(entry => entry.count > 0)
+
+        // Reuse the facet-list markup/classes from index.html so the list looks
+        // like the gallery page's filters. The links deliberately don't use the
+        // .facet-link class, which Faceter would otherwise try to handle.
+        // unit.label is already HTML-escaped by Corpora, so it's safe here.
+        appendToEl(column, `
+            <div class="facet-list">
+                <div class="facet-list-header">Units <span class="count-badge">${units.length}</span></div>
+                <div id="unit-list-content" class="facet-list-content">
+                    <a href="#" id="unit-clear-link" class="unit-link hidden" data-unit-id="">Show all units</a>
+                    ${units.map(({ unit, count }) => `
+                        <a href="#" class="unit-link" data-unit-id="${unit.id}">
+                            ${unit.label} <span class="count-badge">${count}</span>
+                        </a>
+                    `).join('')}
+                </div>
+            </div>
+        `)
+
+        // One delegated handler for every link in the list. Clicking the
+        // selected unit again (or "Show all units") clears the filter.
+        getEl('unit-list-content').addEventListener('click', e => {
+            const link = e.target.closest('.unit-link')
+            if (!link) return
+            e.preventDefault()
+            const unitID = link.dataset.unitId || null
+            selectUnit(unitID === selectedUnitID ? null : unitID)
+        })
+    }
+
+    function selectUnit(unitID) {
+        selectedUnitID = unitID
+        selectedTileKey = null
+
+        // Reflect the selection in the list.
+        forElsMatching('.unit-link', link => {
+            link.classList.toggle('selected', !!unitID && link.dataset.unitId === unitID)
+        })
+        getEl('unit-clear-link').classList.toggle('hidden', !unitID)
+
+        // Zoom to where this unit's Features are (or back to everything), then
+        // redraw tiles and gallery immediately rather than waiting for the
+        // debounced moveend. That moveend still fires a second later, but by
+        // then the tile key and gallery signature match, so it's a no-op.
+        fitMapToData(() => {
+            refreshTiles()
+            renderGallery()
+        })
+    }
+
+
+    /* ==========================================================================
+       MAIN ENTRY POINT
+       ========================================================================== */
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // The heat map only needs the API's aggregations, so start it straight
+        // away instead of waiting for the much larger corpus download.
+        buildHeatMap()
+
+        // The unit list and gallery need the in-memory corpus (Units, Maps,
+        // Features and the connections between them). After the first visit
+        // this comes from the IndexedDB cache.
+        mv.corpus = new Corpus()
+        mv.corpus.build(() => {
+            // Detailer's feature modal calls into Faceter for share/filter
+            // links. With a null parent, Faceter wires up no page elements.
+            mv.faceter = new Faceter(null, 'Feature')
+
+            // The modal opens at the top of the gallery column. This page has
+            // no filtering of its own, so the modal's tag/event/place links go
+            // to the main gallery page instead.
+            mv.detailer = new Detailer('#feature-gallery-column')
+            mv.detailer.linkTargetPage = 'index.html'
+
+            corpusReady = true
+            buildUnitList()
+            renderGallery()
+        })
+
+        // Clicking a gallery pane opens that Feature in Detailer's modal
+        // (same behavior as index.html). A few Features have no Map, which
+        // the modal can't display, so skip those.
+        document.addEventListener('click', e => {
+            const pane = e.target.closest('.gallery-pane')
+            if (pane && mv.detailer && mv.corpus.getContent('Feature', pane.dataset.id)?.map) {
+                mv.detailer.showFeatureDetails(pane)
+            }
+        })
+    })
+
+</script>
+</body>
+</html>

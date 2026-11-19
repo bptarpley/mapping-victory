@@ -5,6 +5,11 @@ class Detailer {
         this.modal = null
         this.dragon = null
 
+        // Page that modal-mode filter links (tags, events, places) point to.
+        // '' means "the current page", which suits index.html. Pages without
+        // their own filtering (e.g. heat-map.html) can set this to 'index.html'.
+        this.linkTargetPage = ''
+
         this.modalTemplate = `
             <div id="feature-detail-modal" class="hidden">
                 <div id="feature-detail-controls">
@@ -50,7 +55,7 @@ class Detailer {
     showFeatureDetails(pane, metadataPane=null) {
         let metaPane = metadataPane
         let dragonPane = null
-        let targetPage = ''
+        let targetPage = this.linkTargetPage
 
         if (metaPane === null) [metaPane, dragonPane] = this.ensureModal()
         else {
